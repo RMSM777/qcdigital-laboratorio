@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QC Digital · Laboratorio</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1526">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QC Laboratorio">
+<style>
+  :root{
+    --marca:#0d1526; --acento:#f5851f; --lab:#00a65a;
+    --ok:#2E7D32; --ok-suave:#EAF3EB; --alerta:#B26A00; --alerta-suave:#FBF1E0; --critico:#C62828; --critico-suave:#FBEBEA;
+    --fondo:#F2F3F5; --tarjeta:#fff; --linea:#E3E5E8; --texto:#1B1D21; --tenue:#6B7078;
+    --nav-h:62px;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--fondo); color:var(--texto);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; font-size:15px; line-height:1.5;
+    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+  .wrap{ max-width:560px; margin:0 auto; background:var(--fondo); }
+  [hidden]{ display:none !important; }
+
+  /* Cabecera */
+  .top{ background:var(--marca); color:#fff; padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top)); display:flex; align-items:center; gap:12px; }
+  .placa{ background:#fff; border-radius:7px; padding:5px 9px; display:flex; align-items:center; gap:6px; flex:none; }
+  .placa svg{ width:22px; height:22px; display:block; }
+  .placa b{ color:var(--marca); font-size:13px; letter-spacing:-.01em; }
+  .top .quien{ flex:1; min-width:0; }
+  .top .hola{ font-size:12px; opacity:.75; }
+  .top .nom{ font-size:17px; font-weight:700; line-height:1.2; }
+  .top .contrato{ font-size:10.5px; opacity:.7; margin-top:1px; }
+  .top .ir{ color:#fff; text-decoration:none; font-size:11px; font-weight:700; border:1px solid rgba(255,255,255,.35); border-radius:20px; padding:5px 10px; white-space:nowrap; }
+  .estado-linea{ display:flex; align-items:center; gap:7px; padding:6px 16px; font-size:11.5px; background:var(--ok-suave); color:#2b5c2e; border-bottom:1px solid var(--linea); }
+  .estado-linea .punto{ width:7px; height:7px; border-radius:50%; background:var(--ok); flex:none; }
+
+  section{ padding:16px; }
+  .titulillo{ font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--tenue); margin:0 0 9px; }
+  .nota{ font-size:12px; color:var(--tenue); margin:-4px 0 10px; line-height:1.45; }
+
+  .hero{ background:var(--tarjeta); border:1px solid var(--linea); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:3px; }
+  .hero-fila{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; }
+  .hero-der{ text-align:right; }
+  .hero .rot{ font-size:12px; color:var(--tenue); }
+  .hero .cifra{ font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .hero .cifra.chica{ font-size:24px; }
+  .hero .cifra small{ font-size:15px; font-weight:600; color:var(--tenue); margin-left:3px; }
+  .hero .detalle{ font-size:12px; color:var(--tenue); margin-top:3px; }
+  .barra{ height:6px; background:var(--linea); border-radius:99px; overflow:hidden; margin:11px 0 4px; }
+  .barra-fill{ height:100%; width:0%; background:var(--lab); border-radius:99px; transition:width .5s ease; }
+  @media (prefers-reduced-motion: reduce){ .barra-fill{ transition:none; } }
+
+  .tiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-top:12px; }
+  .tile{ background:var(--tarjeta); border:1px solid var(--linea); border-radius:11px; padding:12px 6px; text-align:center; border-top:3px solid var(--linea); }
+  .tile .n{ font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15; }
+  .tile .l{ font-size:9px; font-weight:600; color:var(--tenue); margin-top:2px; letter-spacing:.03em; text-transform:uppercase; }
+  .tile.a{ border-top-color:var(--acento); } .tile.a .n{ color:var(--acento); }
+  .tile.b{ border-top-color:var(--lab); } .tile.b .n{ color:var(--lab); }
+  .tile.c{ border-top-color:var(--marca); }
+  .tile.d{ border-top-color:var(--tenue); }
+
+  .flujo{ display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; }
+  .paso{ flex:1 0 96px; background:var(--tarjeta); border:1px solid var(--linea); border-radius:10px; padding:9px 8px; font-size:11px; color:var(--tenue); line-height:1.3; }
+  .paso b{ display:block; font-size:12px; color:var(--texto); margin-bottom:2px; }
+  .paso i{ font-style:normal; font-weight:800; color:var(--acento); font-size:10px; letter-spacing:.06em; }
+
+  .lista-herr{ display:flex; flex-direction:column; gap:7px; }
+  .herr{ background:var(--tarjeta); border:1px solid var(--linea); border-radius:11px; padding:11px 13px; display:flex; align-items:center; gap:11px; text-decoration:none; color:inherit; cursor:pointer; text-align:left; font:inherit; width:100%; }
+  .herr .cod{ font-size:10.5px; font-weight:800; color:var(--tenue); font-variant-numeric:tabular-nums; flex:none; width:62px; font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .herr .cuerpo{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .herr .nom{ font-size:13.5px; font-weight:600; line-height:1.3; }
+  .herr .sub{ font-size:11px; color:var(--tenue); line-height:1.35; margin-top:1px; }
+  .herr .flecha{ color:var(--tenue); font-size:20px; flex:none; line-height:1; }
+  .herr.destacada{ border-left:3px solid var(--lab); }
+  .herr.destacada .cod{ color:var(--lab); }
+  .herr .pte{ flex:none; font-size:10.5px; font-weight:700; color:var(--acento); border:1px solid var(--linea); border-radius:20px; padding:3px 9px; background:none; cursor:pointer; font-family:inherit; }
+
+  .buscar{ display:flex; gap:8px; margin-bottom:10px; }
+  .buscar input{ flex:1; min-width:0; border:1px solid var(--linea); border-radius:10px; padding:10px 12px; font-size:15px; font-family:inherit; background:var(--tarjeta); color:var(--texto); }
+  .chips{ display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:10px; }
+  .chip{ flex:none; border:1px solid var(--linea); background:var(--tarjeta); border-radius:20px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; color:var(--texto); font-family:inherit; }
+  .chip.act{ background:var(--marca); color:#fff; border-color:var(--marca); }
+  .grupo{ font-size:12.5px; font-weight:800; margin:16px 0 8px; display:flex; justify-content:space-between; }
+  .grupo span{ color:var(--tenue); font-weight:600; }
+  details.mas{ margin-top:14px; }
+  details.mas summary{ cursor:pointer; font-size:12.5px; font-weight:700; color:var(--acento); padding:6px 0; }
+
+  .btn-grande{ display:block; width:100%; text-align:center; text-decoration:none; background:var(--acento); color:#fff; font-weight:700; font-size:15px; padding:14px; border-radius:11px; border:none; cursor:pointer; margin-top:12px; font-family:inherit; }
+  .btn-sec{ display:block; width:100%; text-align:center; text-decoration:none; background:var(--tarjeta); color:var(--texto); font-weight:700; font-size:14px; padding:12px; border-radius:11px; border:1px solid var(--linea); margin-top:8px; }
+
+  .card{ background:var(--tarjeta); border:1px solid var(--linea); border-radius:12px; padding:12px 14px; }
+  .clausula{ display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--linea); font-size:13px; }
+  .clausula:last-child{ border-bottom:none; }
+  .clausula .n{ font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:700; width:38px; flex:none; color:var(--lab); }
+  .clausula .t{ font-weight:600; }
+  .clausula .d{ font-size:11.5px; color:var(--tenue); }
+  .hito{ display:flex; gap:11px; padding:10px 0; border-bottom:1px solid var(--linea); align-items:flex-start; }
+  .hito:last-child{ border-bottom:none; }
+  .hito input{ width:20px; height:20px; accent-color:var(--lab); margin-top:1px; flex:none; }
+  .hito .t{ font-size:13.5px; font-weight:600; line-height:1.3; }
+  .hito .d{ font-size:11.5px; color:var(--tenue); line-height:1.35; }
+  .hito.ok .t{ text-decoration:line-through; text-decoration-color:var(--lab); }
+  .pie{ text-align:center; font-size:11px; color:var(--tenue); padding:6px 16px 20px; }
+
+  .nav{ position:fixed; left:0; right:0; bottom:0; z-index:50; background:var(--tarjeta); border-top:1px solid var(--linea); display:flex; padding-bottom:env(safe-area-inset-bottom); }
+  .nav button{ flex:1; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--tenue); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; height:var(--nav-h); font-size:10px; font-weight:600; padding:0; }
+  .nav .ico{ width:21px; height:21px; display:block; }
+  .nav .act{ color:var(--acento); }
+  .panel{ display:none; } .panel.act{ display:block; }
+
+  @media (min-width:860px){
+    body{ padding-top:28px; padding-left:16px; padding-right:16px; }
+    .wrap{ max-width:760px; margin:0 auto 16px; border-radius:16px; overflow:hidden; box-shadow:0 10px 34px rgba(13,21,38,.14); border:1px solid var(--linea); }
+    .lista-herr{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .nav{ max-width:760px; margin:0 auto; border-radius:16px 16px 0 0; border:1px solid var(--linea); border-bottom:none; box-shadow:0 -6px 20px rgba(13,21,38,.10); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="placa"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="100" fill="#0d1526"/><polygon points="256,106 385.9,181 385.9,331 256,406 126.1,331 126.1,181" fill="none" stroke="#f5851f" stroke-width="34"/><path d="M181,260 L231,310 L339,194" fill="none" stroke="#f5851f" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></svg><b>QC Digital</b></span>
+    <div class="quien">
+      <div class="hola">Módulo</div>
+      <div class="nom">Laboratorio de Ensayos</div>
+      <div class="contrato">Sistema de gestión NCh-ISO 17025:2017</div>
+    </div>
+    <a class="ir" href="https://checklist-zublin.pages.dev/app-inicio.html">Inspecciones ›</a>
+  </div>
+  <div class="estado-linea"><span class="punto"></span><span>Versión inicial · los formularios guardan su avance en archivo .json</span></div>
+
+  <!-- ============ INICIO ============ -->
+  <div class="panel act" id="p-inicio">
+    <section>
+      <div class="hero">
+        <div class="hero-fila">
+          <div><div class="rot">Ruta de acreditación INN</div><div class="cifra" id="hRuta">0<small>/ 14</small></div></div>
+          <div class="hero-der"><div class="rot">Formularios digitales</div><div class="cifra chica" id="hForm">—</div></div>
+        </div>
+        <div class="barra"><div class="barra-fill" id="hBarra"></div></div>
+        <div class="detalle" id="hDetalle">Marca los hitos en la pestaña SGC.</div>
+      </div>
+      <div class="tiles">
+        <div class="tile c"><div class="n" id="tMet">—</div><div class="l">Métodos</div></div>
+        <div class="tile a"><div class="n" id="tPte">—</div><div class="l">Proced. ensayo</div></div>
+        <div class="tile b"><div class="n" id="tFor">—</div><div class="l">Formularios</div></div>
+        <div class="tile d"><div class="n" id="tDoc">—</div><div class="l">Documentos</div></div>
+      </div>
+    </section>
+
+    <section style="padding-top:4px;">
+      <p class="titulillo">Cómo avanza un ensayo</p>
+      <div class="flujo">
+        <div class="paso"><i>1</i><b>Recepción</b>Muestra codificada (IT-01)</div>
+        <div class="paso"><i>N1</i><b>Técnico</b>Ingresa datos y firma</div>
+        <div class="paso"><i>N2</i><b>Revisor</b>Verifica cálculos y datos</div>
+        <div class="paso"><i>N3</i><b>Validador</b>Firma el informe oficial</div>
+        <div class="paso"><i>✓</i><b>Envío</b>Con pago confirmado</div>
+      </div>
+    </section>
+
+    <section style="padding-top:4px;">
+      <p class="titulillo">Formularios de uso frecuente</p>
+      <div class="lista-herr" id="listaRapida"></div>
+      <button class="btn-grande" onclick="irA('ensayos')">Ver todos los ensayos</button>
+    </section>
+  </div>
+
+  <!-- ============ ENSAYOS ============ -->
+  <div class="panel" id="p-ensayos">
+    <section>
+      <p class="titulillo">Formularios de ensayo</p>
+      <p class="nota">Cada formulario calcula, firma en 3 niveles y genera el PDF provisorio o validado. Usa «Guardar avance» para continuar después.</p>
+      <div class="buscar"><input type="search" id="qEns" placeholder="Buscar ensayo, norma o código…" oninput="pintarEnsayos()"></div>
+      <div class="chips" id="chipsArea"></div>
+      <div id="listaEnsayos"></div>
+    </section>
+  </div>
+
+  <!-- ============ BIBLIOTECA ============ -->
+  <div class="panel" id="p-biblioteca">
+    <section>
+      <p class="titulillo">Biblioteca SGC</p>
+      <p class="nota">Documentos controlados del laboratorio. Ábrelos para leerlos completos o descargar su Word.</p>
+      <div class="buscar"><input type="search" id="qDoc" placeholder="Buscar código o título…" oninput="pintarDocs()"></div>
+      <div class="chips" id="chipsTipo"></div>
+      <div class="lista-herr" id="listaDocs"></div>
+      <a class="btn-sec" href="docs/QCDigital_SGC_17025_Base_Documental.zip" download>Descargar base completa (.zip)</a>
+    </section>
+  </div>
+
+  <!-- ============ SGC ============ -->
+  <div class="panel" id="p-sgc">
+    <section>
+      <p class="titulillo">Ruta de acreditación INN</p>
+      <p class="nota">El avance se guarda en este dispositivo.</p>
+      <div class="card" id="listaRuta"></div>
+    </section>
+    <section style="padding-top:4px;">
+      <p class="titulillo">Requisitos NCh-ISO 17025:2017</p>
+      <div class="card" id="listaMatriz"></div>
+    </section>
+    <section style="padding-top:4px;">
+      <p class="titulillo">Catálogo de métodos</p>
+      <p class="nota">Métodos consolidados desde NCh, Manual de Carreteras Vol. 8, ASTM, AASHTO y UNE-EN. A = alcance inicial, B = con procedimiento, C = identificado.</p>
+      <div class="buscar"><input type="search" id="qCat" placeholder="Buscar en el catálogo…" oninput="pintarCatalogo()"></div>
+      <div class="lista-herr" id="listaCat"></div>
+    </section>
+  </div>
+
+  <div class="pie">QC Digital · Laboratorio · laboratorio.qcdigital.cl</div>
+</div>
+
+<nav class="nav">
+  <button class="act" data-p="inicio" onclick="irA('inicio')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Inicio</button>
+  <button data-p="ensayos" onclick="irA('ensayos')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/></svg>Ensayos</button>
+  <button data-p="biblioteca" onclick="irA('biblioteca')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Biblioteca</button>
+  <button data-p="sgc" onclick="irA('sgc')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>SGC</button>
+</nav>
+
+<script>
+const AREAS=['Suelos','Áridos','Hormigones','Hormigón proyectado','Cemento y morteros','Asfaltos','END'];
+const TIPOS=[['','Todos'],['Manual','Manual'],['Política','Políticas'],['Normativa interna','Normativa interna'],['Procedimiento de gestión','Proced. de gestión'],['Procedimiento técnico de ensayo','Proced. de ensayo'],['Instructivo','Instructivos'],['Formato de gestión','Formatos']];
+const RUTA=[
+ ['alcance','Definir el alcance inicial de acreditación','Ensayos prioridad A por área.'],
+ ['docs','Aprobar Manual, políticas y procedimientos de gestión','MSG-01, POL-01 a 08, PG-01 a 23 firmados.'],
+ ['pte','Aprobar procedimientos y formatos del alcance inicial','PTE y formatos con norma vigente en biblioteca.'],
+ ['equipos','Equipos con calibración acreditada vigente','Inventario, hojas de vida y programa (PG-09, PG-10).'],
+ ['personal','Personal formado y autorizado por ensayo','Matriz de autorizaciones y declaraciones (PG-07).'],
+ ['metodos','Verificar métodos y estimar incertidumbre','FR-20 y FR-23 por ensayo (PG-13, PG-17).'],
+ ['software','Validar QC Digital Laboratorio','Cálculos comparados con cálculo independiente (PG-22).'],
+ ['operar','Operar el sistema y generar registros','Solicitudes, ensayos, informes y controles registrados.'],
+ ['ea','Participar en ensayos de aptitud','Al menos una ronda por área (PG-18).'],
+ ['auditoria','Auditoría interna completa','Todas las cláusulas; NC cerradas (PG-05).'],
+ ['rxd','Revisión por la dirección','Acta con las entradas de 8.9.2 (PG-06).'],
+ ['inn','Postular al INN','Solicitud con alcance y documentos.'],
+ ['eval','Evaluación del INN y cierre de hallazgos','Documental y en sitio.'],
+ ['acred','Acreditación otorgada','Uso del símbolo según POL-07.']];
+let CAT=[],DOCS=[],MATRIZ=[],areaSel='',tipoSel='';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function irA(p){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('act',x.id==='p-'+p));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('act',b.dataset.p===p));history.replaceState(null,'','#'+p);window.scrollTo(0,0)}
+const verDoc=c=>location.href='documento.html?c='+encodeURIComponent(c);
+const normas=c=>[c.nch,c.mc&&c.mc!=='—'?'MC '+c.mc:'',c.o].filter(x=>x&&x!=='—').join(' · ');
+function filaForm(c){return `<a class="herr destacada" href="${esc(c.u)}"><span class="cod">${esc(c.c.replace('PTE-',''))}</span><span class="cuerpo"><span class="nom">${esc(c.n)}</span><span class="sub">${esc(normas(c))}</span></span><button class="pte" onclick="event.preventDefault();verDoc('${c.c}')">PTE</button><span class="flecha">›</span></a>`}
+function filaPte(c){return `<button class="herr" onclick="verDoc('${c.c}')"><span class="cod">${esc(c.c.replace('PTE-',''))}</span><span class="cuerpo"><span class="nom">${esc(c.n)}</span><span class="sub">Procedimiento · formulario por digitalizar</span></span><span class="flecha">›</span></button>`}
+
+function pintarInicio(){
+  const f=CAT.filter(c=>c.u);
+  $('#tMet').textContent=CAT.length;$('#tPte').textContent=CAT.filter(c=>c.pte).length;$('#tFor').textContent=f.length;$('#tDoc').textContent=DOCS.filter(d=>d.tipo!=='Formato de ensayo').length;
+  $('#hForm').textContent=f.length;
+  const r=lsGet('lab_ruta',{}),n=RUTA.filter(([k])=>r[k]).length;
+  $('#hRuta').innerHTML=n+'<small>/ '+RUTA.length+'</small>';$('#hBarra').style.width=(n/RUTA.length*100)+'%';
+  const sig=RUTA.find(([k])=>!r[k]);$('#hDetalle').textContent=sig?'Siguiente hito: '+sig[1]:'Todos los hitos completados';
+  const top=['PTE-SU-05','PTE-SU-08','PTE-SU-03','PTE-HO-02','PTE-SU-04','PTE-SU-10'];
+  $('#listaRapida').innerHTML=top.map(k=>CAT.find(c=>c.c===k)).filter(Boolean).map(filaForm).join('');
+}
+function pintarEnsayos(){
+  const q=($('#qEns').value||'').toLowerCase();
+  const ok=c=>(!areaSel||c.a===areaSel)&&(!q||[c.c,c.n,c.nch,c.mc,c.o].join(' ').toLowerCase().includes(q));
+  const conF=CAT.filter(c=>c.u&&ok(c)),sinF=CAT.filter(c=>c.pte&&!c.u&&ok(c));
+  let h='';
+  AREAS.forEach(a=>{const xs=conF.filter(c=>c.a===a);if(xs.length)h+=`<div class="grupo">${a}<span>${xs.length}</span></div><div class="lista-herr">${xs.map(filaForm).join('')}</div>`});
+  if(!conF.length)h+='<div class="nota" style="margin-top:8px">Sin formularios digitales para este filtro.</div>';
+  if(sinF.length)h+=`<details class="mas"${q||areaSel?' open':''}><summary>Procedimientos sin formulario digital (${sinF.length})</summary><div class="lista-herr">${sinF.map(filaPte).join('')}</div></details>`;
+  $('#listaEnsayos').innerHTML=h;
+}
+function pintarChips(){
+  $('#chipsArea').innerHTML=[['','Todas'],...AREAS.map(a=>[a,a])].map(([v,l])=>`<button class="chip${areaSel===v?' act':''}" onclick="areaSel='${v}';pintarChips();pintarEnsayos()">${l}</button>`).join('');
+  $('#chipsTipo').innerHTML=TIPOS.map(([v,l])=>`<button class="chip${tipoSel===v?' act':''}" onclick="tipoSel='${v}';pintarChips();pintarDocs()">${l}</button>`).join('');
+}
+function pintarDocs(){
+  const q=($('#qDoc').value||'').toLowerCase();
+  const xs=DOCS.filter(d=>d.tipo!=='Formato de ensayo'&&(!tipoSel||d.tipo===tipoSel)&&(!q||(d.codigo+' '+d.titulo).toLowerCase().includes(q)));
+  $('#listaDocs').innerHTML=xs.map(d=>`<button class="herr" onclick="verDoc('${d.codigo}')"><span class="cod">${esc(d.codigo)}</span><span class="cuerpo"><span class="nom">${esc(d.titulo)}</span><span class="sub">${esc(d.tipo)} · Rev. ${esc(d.rev)}</span></span><span class="flecha">›</span></button>`).join('')||'<div class="nota">Sin resultados.</div>';
+}
+function pintarSGC(){
+  const r=lsGet('lab_ruta',{});
+  $('#listaRuta').innerHTML=RUTA.map(([k,t,d])=>`<label class="hito${r[k]?' ok':''}"><input type="checkbox" ${r[k]?'checked':''} onchange="marcarHito('${k}',this.checked)"><span><div class="t">${t}</div><div class="d">${d}</div></span></label>`).join('');
+  $('#listaMatriz').innerHTML=MATRIZ.map(m=>`<div class="clausula"><span class="n">${m[0]}</span><span><div class="t">${esc(m[1])}</div><div class="d">${esc(m[2])}</div></span></div>`).join('');
+  pintarCatalogo();
+}
+function marcarHito(k,v){const r=lsGet('lab_ruta',{});r[k]=v?new Date().toISOString().slice(0,10):false;lsSet('lab_ruta',r);pintarSGC();pintarInicio()}
+function pintarCatalogo(){
+  const q=($('#qCat').value||'').toLowerCase();
+  const xs=CAT.filter(c=>!q||[c.c,c.n,c.nch,c.mc,c.o,c.a].join(' ').toLowerCase().includes(q));
+  $('#listaCat').innerHTML=xs.map(c=>{const inner=`<span class="cod">${esc(c.c.replace(/^(PTE|CAT)-/,''))}</span><span class="cuerpo"><span class="nom">${esc(c.n)}</span><span class="sub">${esc(c.a)} · ${c.p} · ${esc(normas(c))}</span></span>`;
+    return c.pte?`<button class="herr" onclick="verDoc('${c.c}')">${inner}<span class="flecha">›</span></button>`:`<div class="herr" style="cursor:default">${inner}</div>`}).join('');
+}
+async function init(){
+  const [cat,docs,matriz]=await Promise.all(['data/catalogo.json','data/documentos.json','data/matriz.json'].map(u=>fetch(u).then(r=>r.json())));
+  CAT=cat;DOCS=docs;MATRIZ=matriz;
+  pintarChips();pintarInicio();pintarEnsayos();pintarDocs();pintarSGC();
+  const h=location.hash.slice(1);if(['ensayos','biblioteca','sgc'].includes(h))irA(h);
+}
+init();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
