@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCDigital Laboratorio — Caja en L (Hormigón Autocompactante)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0d1526;
+    --navy2:#141f38;
+    --navy3:#1b2947;
+    --green:#00e676;
+    --green-dark:#00b85c;
+    --amber:#ffb300;
+    --red:#ff5252;
+    --border:#2a3654;
+    --text:#e8ecf5;
+    --text-dim:#9aa5c0;
+    --card-bg:#111a30;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI', Arial, sans-serif; background:#0a1120; color:var(--text);
+    padding-bottom:60px;
+  }
+  header.app-header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);
+    padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:2px solid var(--green); position:sticky; top:0; z-index:50;
+  }
+  .wordmark{display:flex; align-items:center; gap:12px;}
+  .wordmark .logo{
+    width:38px; height:38px; border-radius:8px;
+    background:linear-gradient(135deg,var(--green) 0%, var(--green-dark) 100%);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy); font-size:18px;
+  }
+  .wordmark .brand{font-size:20px; font-weight:800; letter-spacing:.5px;}
+  .wordmark .brand span{color:var(--green);}
+  .tag{font-size:11px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; margin-top:2px;}
+  .save-bar{display:flex; align-items:center; gap:10px;}
+  .save-status{font-size:12px; color:var(--text-dim);}
+  .save-status.dirty{color:var(--amber);}
+  .save-status.saved{color:var(--green);}
+  button{
+    cursor:pointer; border:1px solid var(--border); background:var(--navy2); color:var(--text);
+    padding:9px 16px; border-radius:7px; font-size:13px; font-weight:600; transition:.15s;
+  }
+  button:hover{border-color:var(--green);}
+  button.primary{background:var(--green); color:var(--navy); border-color:var(--green);}
+  button.primary:hover{background:var(--green-dark);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  main{max-width:1180px; margin:0 auto; padding:24px 20px;}
+  h1{font-size:22px; margin:0 0 4px;}
+  .subtitle{color:var(--text-dim); font-size:13px; margin-bottom:22px;}
+  .card{
+    background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h2{font-size:15px; margin:0 0 16px; color:var(--green); display:flex; align-items:center; gap:8px;}
+  .card h2 .num{
+    width:24px; height:24px; border-radius:50%; background:var(--navy3); color:var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--green);
+  }
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12px; color:var(--text-dim);}
+  .field input, .field select, .field textarea{
+    background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:6px; font-size:13px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--green);}
+  .hint{font-size:11px; color:var(--text-dim); margin-top:2px;}
+  .hint.warn{color:var(--amber);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left; padding:8px 6px; color:var(--text-dim); font-weight:600; border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  td{padding:6px; border-bottom:1px solid #1a2440; vertical-align:middle;}
+  td input, td select{
+    width:100%; background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:6px 7px; border-radius:5px; font-size:12.5px; font-family:inherit;
+  }
+  .btn-icon{padding:5px 9px; font-size:12px;}
+  .btn-danger{border-color:var(--red); color:var(--red);}
+  .btn-danger:hover{background:rgba(255,82,82,.12);}
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;}
+  .badge.ok{background:rgba(0,230,118,.15); color:var(--green);}
+  .badge.warn{background:rgba(255,179,0,.15); color:var(--amber);}
+  .badge.bad{background:rgba(255,82,82,.15); color:var(--red);}
+  .badge.neutral{background:rgba(154,165,192,.15); color:var(--text-dim);}
+  .toolbar{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center;}
+  .results-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .result-card{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .result-card .label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .result-card .value{font-size:20px; font-weight:800; margin-top:4px;}
+  .chart-wrap{background:#0c1424; border:1px solid var(--border); border-radius:10px; padding:14px; height:280px;}
+  .chart-caption{font-size:11px; color:var(--text-dim); margin-top:8px; text-align:center;}
+  .firmas-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;}
+  .firma-box{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px;}
+  .firma-box h3{font-size:13px; margin:0 0 4px; display:flex; justify-content:space-between; align-items:center;}
+  .firma-box .rol-tag{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .firma-pad-wrap canvas{width:100%; height:110px; background:#fff; border-radius:6px; cursor:crosshair; touch-action:none;}
+  .firma-estado{font-size:12px; margin-top:8px;}
+  .firma-estado.pendiente{color:var(--text-dim);}
+  .firma-estado.firmado{color:var(--green); font-weight:600;}
+  .footer-note{font-size:11px; color:var(--text-dim); line-height:1.6; margin-top:26px; padding:16px 18px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px;}
+  .footer-note b{color:var(--text);}
+  .det-card{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:14px;}
+  .det-card .det-head{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .det-card .det-head .det-num{
+    width:24px; height:24px; border-radius:50%; background:var(--navy3); color:var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--green); flex-shrink:0;
+  }
+  .lecturas-group{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:10px;}
+  .lecturas-group .grp{background:#0c1424; border:1px solid var(--border); border-radius:8px; padding:10px 12px;}
+  .lecturas-group .grp .grp-title{font-size:11px; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px;}
+  .lecturas-group .grp .puntos{display:flex; gap:6px; margin-bottom:6px;}
+  .lecturas-group .grp .puntos input{width:0; flex:1;}
+  .lecturas-group .grp .prom{font-size:12px; color:var(--text-dim);}
+  .lecturas-group .grp .prom b{color:var(--text);}
+  .det-result{margin-top:10px; font-size:13px; display:flex; gap:16px; flex-wrap:wrap; align-items:center;}
+  @media (max-width:640px){ .lecturas-group{grid-template-columns:1fr;} }
+</style>
+</head>
+<body><div id="qcdLabBar" style="position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;background:#0d1526;color:#fff;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:9px 14px;padding-top:calc(9px + env(safe-area-inset-top));border-bottom:2px solid #f5851f"><a href="../index.html#ensayos" style="color:#fff;text-decoration:none">&#8249; Laboratorio</a><span style="flex:1;text-align:center;opacity:.8;font-weight:500">Hormigón autocompactante</span><a href="../documento.html?c=PTE-HO-14" style="color:#f5851f;text-decoration:none">Ver PTE</a></div>
+
+<header class="app-header">
+  <div class="wordmark">
+    <div class="logo">QC</div>
+    <div>
+      <div class="brand">QC<span>digital</span></div>
+      <div class="tag">Módulo Laboratorio</div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <span id="saveStatus" class="save-status">Sin cambios</span>
+    <button id="btnCargar">Cargar avance</button>
+    <input type="file" id="fileInputAvance" accept=".json" style="display:none">
+    <button id="btnGuardar" class="primary">Guardar avance</button>
+  </div>
+</header>
+
+<main>
+  <h1>Caja en L — Hormigón Autocompactante</h1>
+  <div class="subtitle">Hormigones · UNE-EN 12350-10:2010 — Ensayo de la caja en L, capacidad de paso · Piloto QCDigital</div>
+
+  <div class="card">
+    <h2><span class="num">1</span> Información general</h2>
+    <div class="grid">
+      <div class="field"><label>N° Boleta</label><input id="g_boleta"></div>
+      <div class="field"><label>N° Muestra</label><input id="g_muestra"></div>
+      <div class="field"><label>Fecha de muestreo</label><input type="date" id="g_fecha"></div>
+      <div class="field"><label>Fecha de informe</label><input type="date" id="g_fechaInforme"></div>
+      <div class="field"><label>Empresa solicitante</label><input id="g_empresa"></div>
+      <div class="field"><label>RUT empresa</label><input id="g_rutEmpresa"></div>
+      <div class="field" style="grid-column:span 2"><label>Obra / Proyecto</label><input id="g_obra"></div>
+      <div class="field"><label>Dirección / Ubicación de la obra</label><input id="g_direccionObra"></div>
+      <div class="field"><label>Elemento / Punto de colocación</label><input id="g_elemento" placeholder="ej. Muro perimetral, eje C-D"></div>
+      <div class="field"><label>Dosificación / Tipo de hormigón</label><input id="g_dosificacion" placeholder="ej. H30 HAC"></div>
+      <div class="field">
+        <label>Variante del ensayo (cláusula 4.1)</label>
+        <select id="g_barras">
+          <option value="3">Tres barras — separación 41±1 mm (simula armado denso)</option>
+          <option value="2">Dos barras — separación 59±1 mm</option>
+        </select>
+      </div>
+      <div class="field"><label>Altura del cuerpo vertical de la caja (mm)</label><input type="number" step="1" id="g_alturaVertical"></div>
+      <div class="field"><label>Altura del cuerpo horizontal de la caja (mm)</label><input type="number" step="1" id="g_alturaHorizontal"></div>
+      <div class="field"><label>Muestreo según EN 12350-1 — Responsable</label><input id="g_responsable"></div>
+      <div class="field"><label>Solicitado por</label><input id="g_solicitadoPor"></div>
+    </div>
+    <div class="hint">Las alturas del cuerpo vertical y horizontal son una dimensión fija del equipo (Figura 1 de la norma) — mídelas una vez en tu caja en L y reutiliza el mismo valor en todos los ensayos con ese equipo. El sistema de barras debe cumplir 12±0,2 mm de diámetro, con la separación indicada según la variante elegida.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Determinaciones</h2>
+    <div id="detsWrap"></div>
+    <div class="toolbar">
+      <button id="btnAddDet">+ Agregar determinación (máx. 3)</button>
+    </div>
+    <div class="hint">Tras abrir la compuerta se mide el descenso del nivel de hormigón en 3 puntos separados a lo ancho de la caja, tanto en el cuerpo vertical (ΔH1) como en el horizontal (ΔH2). H1 y H2 son la altura del cuerpo menos el promedio de esas 3 lecturas (cláusula 6). La capacidad de paso PL = H2/H1 se calcula redondeando a 0,01 (cláusula 7) y se informa redondeada a 0,05 (cláusula 8f).</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> Exigencia del proyecto (opcional)</h2>
+    <div class="grid">
+      <div class="field"><label>PL mínimo especificado</label><input type="number" step="0.05" min="0" max="1" id="g_exigMin"></div>
+      <div class="field"><label>PL máximo especificado</label><input type="number" step="0.05" min="0" max="1" id="g_exigMax"></div>
+    </div>
+    <div class="hint">La norma UNE-EN 12350-10 es un método de ensayo, no define un valor de aceptación de PL — el umbral objetivo (habitualmente un mínimo) lo fija la especificación de cada proyecto/obra. Dejar en blanco si no aplica.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> Resultados</h2>
+    <div class="results-grid">
+      <div class="result-card"><div class="label">PL promedio (informado, ±0,05)</div><div class="value" id="rc_pl">—</div></div>
+      <div class="result-card"><div class="label">Repetibilidad (Tabla 1, solo 3 barras)</div><div class="value" id="rc_repetibilidad" style="font-size:15px">—</div></div>
+      <div class="result-card"><div class="label">Indicios de segregación</div><div class="value" id="rc_segregacion" style="font-size:15px">—</div></div>
+      <div class="result-card"><div class="label">Cumple exigencia de proyecto</div><div class="value" id="rc_cumple" style="font-size:15px">—</div></div>
+    </div>
+    <div style="margin-top:18px">
+      <div class="chart-wrap"><canvas id="chartPL"></canvas></div>
+      <div class="chart-caption">Capacidad de paso PL = H2/H1 por determinación — línea punteada ámbar marca la exigencia de proyecto, si se especificó</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span> Observaciones generales</h2>
+    <div class="field"><textarea id="g_observaciones" rows="3" style="width:100%"></textarea></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span> Firmas</h2>
+    <div class="firmas-row" id="firmasRow"></div>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnPdfProvisorio">Generar informe PDF (provisorio)</button>
+    <button id="btnPdfValidado" class="primary">Generar informe PDF</button>
+  </div>
+
+  <div class="footer-note">
+    <b>Notas del piloto QCDigital:</b> este piloto se construyó sobre el texto completo de <b>UNE-EN 12350-10:2010</b> ("Ensayos de hormigón fresco — Parte 10: Hormigón autocompactante — Método de la caja en L"), ubicado y leído íntegro en el proyecto, mismo estándar de fuente que Escurrimiento HAC y complemento natural de ese piloto (misma familia de ensayos de hormigón autocompactante, aunque con equipo distinto). El cálculo (H1 y H2 a partir del descenso medido en 3 puntos, PL=H2/H1 redondeado a 0,01 para uso interno y a 0,05 para el informe) y la tabla de repetibilidad/reproductibilidad (cláusula 9, válida solo para el ensayo con tres barras) están tomados directamente del texto de la norma. La única cifra que <b>no</b> se pudo extraer con certeza del documento del proyecto son las dimensiones exactas del cuerpo vertical y horizontal de la caja (Figura 1 es un diagrama, no texto) — por eso este piloto las pide como dato de equipo en vez de asumir un valor, para no arriesgar un cálculo con una dimensión incorrecta. Igual que Escurrimiento HAC, la norma no define un valor de aceptación de PL — el rango de "Exigencia del proyecto" es opcional y depende de la especificación de cada obra. Conviene que el laboratorio confirme las dimensiones reales de su caja en L para dejarlas precargadas, y si trabajan habitualmente con la variante de 2 o 3 barras.
+  </div>
+</main>
+
+<script>
+const ROLES = [
+  {key:'tecnico', label:'Técnico de terreno', desc:'Nivel 1 — Captura'},
+  {key:'revisor', label:'Revisor', desc:'Nivel 2 — Filtro de cálculos y datos'},
+  {key:'validador', label:'Validador', desc:'Nivel 3 — Firma oficial'},
+];
+
+// Listener delegado genérico para todos los campos "g_*" -- sin esto, editarlos solos no dispara
+// calcularTodo() ni markDirty() (bug encontrado y corregido en pilotos anteriores; se incluye
+// desde el arranque en este piloto).
+document.querySelectorAll('main input, main select, main textarea').forEach(el => {
+  if (el.id && el.id.startsWith('g_')){
+    el.addEventListener('input', () => { markDirty(); calcularTodo(); });
+    el.addEventListener('change', () => { markDirty(); calcularTodo(); });
+  }
+});
+
+// --- Determinaciones: hasta 3 ---
+let detSeq = 0;
+let determinaciones = [];
+function nuevaDeterminacion(vals){
+  detSeq++;
+  return Object.assign({id:'d'+detSeq, hora:'', dh1:['','',''], dh2:['','',''], segregacion:''}, vals||{});
+}
+
+function renderDeterminaciones(){
+  const wrap = document.getElementById('detsWrap');
+  wrap.innerHTML = '';
+  determinaciones.forEach((d, idx) => {
+    const box = document.createElement('div');
+    box.className = 'det-card';
+    box.dataset.id = d.id;
+    box.innerHTML = `
+      <div class="det-head">
+        <span class="det-num">${idx+1}</span>
+        <div class="field" style="flex-direction:row; align-items:center; gap:6px;"><label style="margin:0">Hora</label><input type="time" class="f-hora" value="${d.hora}" style="width:100px"></div>
+        <div class="field" style="flex-direction:row; align-items:center; gap:6px; flex:1;">
+          <label style="margin:0">Segregación</label>
+          <select class="f-segregacion" style="max-width:220px">
+            <option value="">Sin indicios</option>
+            <option value="si">Con indicios de segregación</option>
+          </select>
+        </div>
+        <button class="btn-icon btn-danger f-delDet" style="margin-left:auto">✕ Quitar</button>
+      </div>
+      <div class="lecturas-group">
+        <div class="grp">
+          <div class="grp-title">ΔH1 — descenso cuerpo vertical (mm), 3 puntos</div>
+          <div class="puntos">
+            <input type="number" step="1" class="f-dh1" data-i="0" placeholder="P1">
+            <input type="number" step="1" class="f-dh1" data-i="1" placeholder="P2">
+            <input type="number" step="1" class="f-dh1" data-i="2" placeholder="P3">
+          </div>
+          <div class="prom">Promedio: <b class="f-dh1prom">—</b> mm</div>
+        </div>
+        <div class="grp">
+          <div class="grp-title">ΔH2 — descenso cuerpo horizontal (mm), 3 puntos</div>
+          <div class="puntos">
+            <input type="number" step="1" class="f-dh2" data-i="0" placeholder="P1">
+            <input type="number" step="1" class="f-dh2" data-i="1" placeholder="P2">
+            <input type="number" step="1" class="f-dh2" data-i="2" placeholder="P3">
+          </div>
+          <div class="prom">Promedio: <b class="f-dh2prom">—</b> mm</div>
+        </div>
+      </div>
+      <div class="det-result"></div>
+    `;
+    wrap.appendChild(box);
+    box.querySelector('.f-segregacion').value = d.segregacion;
+    box.querySelectorAll('.f-dh1').forEach((el,i) => { el.value = d.dh1[i]; });
+    box.querySelectorAll('.f-dh2').forEach((el,i) => { el.value = d.dh2[i]; });
+    box.querySelector('.f-hora').addEventListener('input', (e) => { d.hora = e.target.value; markDirty(); calcularTodo(); });
+    box.querySelector('.f-segregacion').addEventListener('change', (e) => { d.segregacion = e.target.value; markDirty(); calcularTodo(); });
+    box.querySelectorAll('.f-dh1').forEach(el => el.addEventListener('input', (e) => { d.dh1[+e.target.dataset.i] = e.target.value; markDirty(); calcularTodo(); }));
+    box.querySelectorAll('.f-dh2').forEach(el => el.addEventListener('input', (e) => { d.dh2[+e.target.dataset.i] = e.target.value; markDirty(); calcularTodo(); }));
+    box.querySelector('.f-delDet').addEventListener('click', () => {
+      determinaciones = determinaciones.filter(x=>x.id!==d.id);
+      if (!determinaciones.length) determinaciones.push(nuevaDeterminacion());
+      renderDeterminaciones(); markDirty();
+    });
+  });
+  calcularTodo();
+}
+
+document.getElementById('btnAddDet').addEventListener('click', () => {
+  if (determinaciones.length >= 3){ alert('Máximo 3 determinaciones por muestra.'); return; }
+  determinaciones.push(nuevaDeterminacion()); renderDeterminaciones(); markDirty();
+});
+
+function promedio(arr){
+  const vals = arr.map(v => parseFloat(v)).filter(v => !isNaN(v));
+  if (!vals.length) return null;
+  return vals.reduce((s,v)=>s+v,0) / vals.length;
+}
+function round05(v){ return Math.round(v/0.05)*0.05; }
+
+// Calcula H1, H2, PL para una determinacion, segun clausulas 6 y 7.
+function calcularDeterminacion(d, alturaVertical, alturaHorizontal){
+  const dh1prom = promedio(d.dh1);
+  const dh2prom = promedio(d.dh2);
+  if (dh1prom === null || dh2prom === null || isNaN(alturaVertical) || isNaN(alturaHorizontal)){
+    return {dh1prom, dh2prom, h1:null, h2:null, plCalc:null, plInformado:null};
+  }
+  const h1 = Math.round(alturaVertical - dh1prom);
+  const h2 = Math.round(alturaHorizontal - dh2prom);
+  if (h1 <= 0) return {dh1prom, dh2prom, h1, h2, plCalc:null, plInformado:null};
+  const plCalc = parseFloat((h2/h1).toFixed(2));
+  const plInformado = parseFloat(round05(plCalc).toFixed(2));
+  return {dh1prom, dh2prom, h1, h2, plCalc, plInformado};
+}
+
+const exigenciaLinesPlugin = {
+  id: 'exigenciaLines',
+  afterDatasetsDraw(chart, args, opts){
+    if (!opts) return;
+    const {ctx, chartArea, scales} = chart;
+    if (!chartArea || !scales.y) return;
+    ctx.save();
+    ctx.strokeStyle = '#ffb300';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    [opts.min, opts.max].forEach(v => {
+      if (v===null || v===undefined || isNaN(v)) return;
+      const y = scales.y.getPixelForValue(v);
+      if (y < chartArea.top || y > chartArea.bottom) return;
+      ctx.beginPath();
+      ctx.moveTo(chartArea.left, y);
+      ctx.lineTo(chartArea.right, y);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined') Chart.register(exigenciaLinesPlugin);
+
+let chart = null;
+function calcularTodo(){
+  const alturaVertical = parseFloat(document.getElementById('g_alturaVertical').value);
+  const alturaHorizontal = parseFloat(document.getElementById('g_alturaHorizontal').value);
+  const barras = document.getElementById('g_barras').value;
+
+  const filas = [];
+  document.querySelectorAll('.det-card').forEach(box => {
+    const id = box.dataset.id;
+    const d = determinaciones.find(x=>x.id===id);
+    if (!d) return;
+    const r = calcularDeterminacion(d, alturaVertical, alturaHorizontal);
+    filas.push({d, r});
+
+    box.querySelector('.f-dh1prom').textContent = r.dh1prom!==null ? r.dh1prom.toFixed(1) : '—';
+    box.querySelector('.f-dh2prom').textContent = r.dh2prom!==null ? r.dh2prom.toFixed(1) : '—';
+    const resEl = box.querySelector('.det-result');
+    if (r.plCalc === null){
+      resEl.innerHTML = '<span class="badge neutral">Faltan datos (lecturas o altura del equipo)</span>';
+    } else {
+      resEl.innerHTML = `H1 = <b>${r.h1} mm</b> · H2 = <b>${r.h2} mm</b> · PL = <b>${r.plInformado.toFixed(2)}</b>` +
+        (d.segregacion==='si' ? ' <span class="badge warn">Indicios de segregación</span>' : '');
+    }
+  });
+
+  const validas = filas.filter(f => f.r.plCalc !== null);
+  const plProm = validas.length ? validas.reduce((s,f)=>s+f.r.plInformado,0)/validas.length : null;
+
+  document.getElementById('rc_pl').textContent = plProm!==null ? round05(plProm).toFixed(2) : '—';
+
+  // Repetibilidad: Tabla 1, solo aplica al ensayo con tres barras.
+  const repetEl = document.getElementById('rc_repetibilidad');
+  if (barras !== '3'){
+    repetEl.innerHTML = '<span class="badge neutral">No publicada para ensayo de 2 barras</span>';
+  } else if (validas.length < 2){
+    repetEl.innerHTML = '<span class="badge neutral">Requiere ≥2 determinaciones válidas</span>';
+  } else {
+    const vals = validas.map(f=>f.r.plCalc);
+    const maxDiff = Math.max(...vals) - Math.min(...vals);
+    const r = plProm >= 0.8 ? 0.11 : 0.13;
+    repetEl.innerHTML = maxDiff <= r
+      ? `<span class="badge ok">OK (${maxDiff.toFixed(2)} ≤ r=${r})</span>`
+      : `<span class="badge warn">Revisar (${maxDiff.toFixed(2)} > r=${r})</span>`;
+  }
+
+  const conSegregacion = filas.filter(f => f.d.segregacion === 'si').length;
+  document.getElementById('rc_segregacion').innerHTML = conSegregacion
+    ? `<span class="badge warn">Sí (${conSegregacion} de ${filas.length})</span>`
+    : (filas.length ? '<span class="badge ok">Sin indicios</span>' : '<span class="badge neutral">—</span>');
+
+  // Exigencia de proyecto
+  const exigMin = parseFloat(document.getElementById('g_exigMin').value);
+  const exigMax = parseFloat(document.getElementById('g_exigMax').value);
+  const hayExigencia = !isNaN(exigMin) || !isNaN(exigMax);
+  const cumpleEl = document.getElementById('rc_cumple');
+  if (!hayExigencia){
+    cumpleEl.innerHTML = '<span class="badge neutral">Sin exigencia especificada</span>';
+  } else if (plProm === null){
+    cumpleEl.innerHTML = '<span class="badge neutral">Sin resultado válido</span>';
+  } else {
+    const okMin = isNaN(exigMin) || plProm >= exigMin;
+    const okMax = isNaN(exigMax) || plProm <= exigMax;
+    const cumple = okMin && okMax;
+    const rango = (isNaN(exigMin)?'':('≥'+exigMin)) + (!isNaN(exigMin)&&!isNaN(exigMax)?' y ':'') + (isNaN(exigMax)?'':('≤'+exigMax));
+    cumpleEl.innerHTML = cumple
+      ? `<span class="badge ok">Cumple (PL ${rango})</span>`
+      : `<span class="badge bad">No cumple (PL ${rango})</span>`;
+  }
+
+  dibujarChart(filas, isNaN(exigMin)?null:exigMin, isNaN(exigMax)?null:exigMax);
+}
+
+function dibujarChart(filas, exigMin, exigMax){
+  const ctx = document.getElementById('chartPL').getContext('2d');
+  const labels = filas.map((f,i) => 'Det. '+(i+1));
+  const data = filas.map(f => f.r.plInformado!==null ? f.r.plInformado : 0);
+  const colors = filas.map(f => {
+    if (f.r.plInformado === null) return '#5a6690';
+    if (f.d.segregacion === 'si') return '#ffb300';
+    if (exigMin!==null && f.r.plInformado < exigMin) return '#ff5252';
+    if (exigMax!==null && f.r.plInformado > exigMax) return '#ff5252';
+    return '#00e676';
+  });
+  if (chart) chart.destroy();
+  const datasets = [{ label:'PL', data, backgroundColor: colors, borderRadius:4 }];
+  const valoresEje = data.slice().concat([1]); // PL rara vez supera 1, se incluye como techo natural de referencia
+  if (exigMin!==null && !isNaN(exigMin)) valoresEje.push(exigMin);
+  if (exigMax!==null && !isNaN(exigMax)) valoresEje.push(exigMax);
+  // .toPrecision+parseFloat evita que el limite del eje quede con ruido de coma flotante
+  // (ver bug documentado en Densidad Maxima y Minima), que Chart.js dibujaria tal cual
+  // en el tick superior del grafico al usar un eje con min/max fijos.
+  const maxEje = parseFloat((Math.max(...valoresEje) * 1.15).toPrecision(6));
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display:false }, exigenciaLines: { min: exigMin, max: exigMax } },
+      scales: {
+        x: { ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' } },
+        y: { min:0, max:maxEje, ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' }, title:{display:true,text:'PL = H2/H1',color:'#9aa5c0'} }
+      }
+    }
+  });
+}
+
+// --- Firmas ---
+let firmas = {};
+function initFirmas(){
+  const wrap = document.getElementById('firmasRow');
+  wrap.innerHTML = '';
+  ROLES.forEach((r,i) => {
+    const box = document.createElement('div');
+    box.className = 'firma-box';
+    box.innerHTML = `
+      <h3>${r.label} <span class="rol-tag">${r.desc}</span></h3>
+      <div class="field" style="margin-bottom:6px"><label>Nombre completo</label><input id="firmaNombre_${r.key}"></div>
+      <div class="field" style="margin-bottom:6px"><label>RUT</label><input id="firmaRut_${r.key}"></div>
+      <div class="firma-pad-wrap"><canvas id="firmaPad_${r.key}" width="400" height="110"></canvas></div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="btn-icon" data-limpiar="${r.key}">Limpiar</button>
+        <button class="btn-icon primary" data-firmar="${r.key}" ${i>0?'disabled':''}>Firmar</button>
+      </div>
+      <div class="firma-estado pendiente" id="firmaEstado_${r.key}">Pendiente de firma</div>
+    `;
+    wrap.appendChild(box);
+  });
+  ROLES.forEach(r => setupFirmaPad(r.key));
+  wrap.querySelectorAll('[data-limpiar]').forEach(btn => btn.addEventListener('click', () => limpiarPad(btn.dataset.limpiar)));
+  wrap.querySelectorAll('[data-firmar]').forEach(btn => btn.addEventListener('click', () => firmarRol(btn.dataset.firmar)));
+}
+
+const padCtx = {};
+function setupFirmaPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#0d1526'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  padCtx[key] = {ctx, drawing:false, hasDrawn:false};
+  const getPos = (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+    return {x: cx * (canvas.width/rect.width), y: cy * (canvas.height/rect.height)};
+  };
+  const start = (ev) => { ev.preventDefault(); const p = getPos(ev); padCtx[key].drawing=true; padCtx[key].hasDrawn=true; ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  const move = (ev) => { if(!padCtx[key].drawing) return; ev.preventDefault(); const p = getPos(ev); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+  const end = () => { padCtx[key].drawing=false; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function limpiarPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  padCtx[key].hasDrawn = false;
+}
+
+function firmarRol(key){
+  const nombre = document.getElementById('firmaNombre_'+key).value.trim();
+  const rut = document.getElementById('firmaRut_'+key).value.trim();
+  if (!nombre || !rut){ alert('Completa nombre y RUT antes de firmar.'); return; }
+  if (!padCtx[key].hasDrawn){ alert('Dibuja la firma en el recuadro antes de firmar.'); return; }
+  const canvas = document.getElementById('firmaPad_'+key);
+  const imgDataUrl = canvas.toDataURL('image/png');
+  firmas[key] = {nombre, rut, imgDataUrl, firmadoAt: new Date().toISOString()};
+  const estadoEl = document.getElementById('firmaEstado_'+key);
+  estadoEl.textContent = 'Firmado — ' + fmtFechaHora(firmas[key].firmadoAt);
+  estadoEl.className = 'firma-estado firmado';
+  const idx = ROLES.findIndex(r=>r.key===key);
+  document.getElementById('firmaNombre_'+key).disabled = true;
+  document.getElementById('firmaRut_'+key).disabled = true;
+  document.querySelector(`[data-firmar="${key}"]`).disabled = true;
+  document.querySelector(`[data-limpiar="${key}"]`).disabled = true;
+  if (idx+1 < ROLES.length){
+    const nextBtn = document.querySelector(`[data-firmar="${ROLES[idx+1].key}"]`);
+    if (nextBtn) nextBtn.disabled = false;
+  }
+  markDirty(); persistSavedIndicator();
+}
+
+function fmtFechaHora(iso){
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// --- Descarga: capacidad "downloads" en Artifact publicado, o descarga clasica por blob ---
+async function offerDownload(filename, dataOrBlob){
+  if (window.claude && typeof window.claude.use === 'function'){
+    try {
+      const downloads = await window.claude.use('downloads');
+      if (downloads){
+        try{
+          await downloads.save({filename, data: dataOrBlob});
+          return true;
+        }catch(err){
+          const code = err && err.code;
+          if (code === 'declined'){
+          } else if (code === 'extension_not_enabled' || code === 'rejected_extension'){
+            alert('Este visor no permite descargar archivos ".' + filename.split('.').pop() + '" directamente. Abre el piloto como archivo HTML (descargado desde el chat) para generar el PDF/JSON sin esta restricción.');
+          } else {
+            alert('No se pudo guardar el archivo: ' + (err && err.message ? err.message : 'error desconocido'));
+          }
+          return false;
+        }
+      }
+    } catch(e) { /* sigue al metodo clasico */ }
+  }
+  const blob = (dataOrBlob instanceof Blob) ? dataOrBlob : new Blob([dataOrBlob], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// --- Guardar / cargar avance ---
+let dirty = false;
+function markDirty(){ dirty = true; const el=document.getElementById('saveStatus'); el.textContent='Cambios sin guardar'; el.className='save-status dirty'; }
+function persistSavedIndicator(msg){
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg || 'Guardado · ' + fmtFechaHora(new Date().toISOString());
+  el.className = 'save-status saved';
+  dirty = false;
+}
+window.addEventListener('beforeunload', (e) => { if (dirty){ e.preventDefault(); e.returnValue=''; } });
+
+function serializarGeneral(){
+  const ids = ['g_boleta','g_muestra','g_fecha','g_fechaInforme','g_empresa','g_rutEmpresa',
+    'g_obra','g_direccionObra','g_elemento','g_dosificacion','g_barras','g_alturaVertical','g_alturaHorizontal',
+    'g_responsable','g_solicitadoPor','g_exigMin','g_exigMax','g_observaciones'];
+  const out = {};
+  ids.forEach(id => { out[id.replace('g_','')] = document.getElementById(id).value; });
+  return out;
+}
+function restaurarGeneral(g){
+  if (!g) return;
+  Object.keys(g).forEach(k => {
+    const el = document.getElementById('g_'+k);
+    if (!el) return;
+    el.value = g[k];
+  });
+}
+
+document.getElementById('btnGuardar').addEventListener('click', async () => {
+  const data = {
+    tipo: 'caja_en_l', version: 1,
+    general: serializarGeneral(),
+    determinaciones: determinaciones.map(d => ({hora:d.hora, dh1:d.dh1, dh2:d.dh2, segregacion:d.segregacion})),
+    firmas,
+    guardadoAt: new Date().toISOString(),
+  };
+  const muestra = document.getElementById('g_muestra').value || 'sinmuestra';
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  const ok = await offerDownload(`Avance_CajaEnL_${muestra}_${stamp}.json`, JSON.stringify(data,null,2));
+  if (ok) persistSavedIndicator();
+});
+
+document.getElementById('btnCargar').addEventListener('click', () => document.getElementById('fileInputAvance').click());
+document.getElementById('fileInputAvance').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      restaurarGeneral(data.general);
+      determinaciones = (data.determinaciones || []).map(x => nuevaDeterminacion(x));
+      if (!determinaciones.length) determinaciones.push(nuevaDeterminacion());
+      renderDeterminaciones();
+      firmas = data.firmas || {};
+      initFirmas();
+      Object.keys(firmas).forEach(key => {
+        const f = firmas[key];
+        document.getElementById('firmaNombre_'+key).value = f.nombre;
+        document.getElementById('firmaRut_'+key).value = f.rut;
+        document.getElementById('firmaNombre_'+key).disabled = true;
+        document.getElementById('firmaRut_'+key).disabled = true;
+        const canvas = document.getElementById('firmaPad_'+key);
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+        img.src = f.imgDataUrl;
+        padCtx[key].hasDrawn = true;
+        const estadoEl = document.getElementById('firmaEstado_'+key);
+        estadoEl.textContent = 'Firmado — ' + fmtFechaHora(f.firmadoAt);
+        estadoEl.className = 'firma-estado firmado';
+        const btnFirmar = document.querySelector(`[data-firmar="${key}"]`);
+        if (btnFirmar) btnFirmar.disabled = true;
+        const btnLimpiar = document.querySelector(`[data-limpiar="${key}"]`);
+        if (btnLimpiar) btnLimpiar.disabled = true;
+      });
+      ROLES.forEach((r,idx) => {
+        if (!firmas[r.key] && idx>0){
+          const prevFirmado = !!firmas[ROLES[idx-1].key];
+          const btn = document.querySelector(`[data-firmar="${r.key}"]`);
+          if (btn) btn.disabled = !prevFirmado;
+        }
+      });
+      persistSavedIndicator('Avance cargado · ' + fmtFechaHora(new Date().toISOString()));
+      calcularTodo();
+    }catch(err){
+      alert('No se pudo leer el archivo de avance: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+// --- QR ---
+function dibujarQR(doc, text, x, y, size, moduleColor){
+  const qr = qrcode(0, 'M');
+  qr.addData(text); qr.make();
+  const count = qr.getModuleCount();
+  const pad = size*0.08;
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(x-pad, y-pad, size+pad*2, size+pad*2, 1.2, 1.2, 'F');
+  const cell = size/count;
+  doc.setFillColor(moduleColor[0], moduleColor[1], moduleColor[2]);
+  for (let r=0;r<count;r++){
+    for (let c=0;c<count;c++){
+      if (qr.isDark(r,c)){
+        doc.rect(x+c*cell, y+r*cell, cell+0.01, cell+0.01, 'F');
+      }
+    }
+  }
+}
+
+// Sanitiza caracteres Unicode que jsPDF/Helvetica no renderiza (mismo problema documentado en
+// pilotos anteriores: ³, ², Δ, ≤, ≥, ρ).
+function pdfAsciiSafe(str){
+  return String(str)
+    .replace(/³/g, '3')
+    .replace(/²/g, '2')
+    .replace(/Δ/g, 'diferencia ')
+    .replace(/≤/g, '<=')
+    .replace(/≥/g, '>=')
+    .replace(/ρ/g, 'rho');
+}
+
+// --- PDF "Alternativa C" ---
+function generarPDF(soloProvisorio){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const pageW = 216, pageH = 279, margin = 14;
+  const g = serializarGeneral();
+  const muestra = g.muestra || 'S-N';
+  const anio = new Date().getFullYear();
+  const codigo = `CJL-${anio}-${muestra}`;
+
+  const nivelesFirmados = ROLES.filter(r => firmas[r.key]).length;
+  const validado = !soloProvisorio && nivelesFirmados === ROLES.length;
+  const estadoTxt = validado ? 'Informe validado' : 'Resultado provisorio';
+  const estadoColor = validado ? [0,184,92] : [255,179,0];
+
+  doc.setFillColor(13,21,38); doc.rect(0,0,pageW,26,'F');
+  doc.setFillColor(0,230,118); doc.roundedRect(margin, 7, 12, 12, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('QC', margin+6, 15, {align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(15);
+  doc.text('QCdigital', margin+18, 13);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('MODULO LABORATORIO', margin+18, 18.5);
+  doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Caja en L - Hormigon Autocompactante', pageW-margin, 15, {align:'right'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('Hormigones — UNE-EN 12350-10:2010', pageW-margin, 20, {align:'right'});
+
+  let y = 30;
+  doc.setFillColor(estadoColor[0],estadoColor[1],estadoColor[2]);
+  doc.roundedRect(margin, y, pageW-margin*2, 14, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(estadoTxt, margin+6, y+9);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Codigo: ' + codigo, margin+70, y+9);
+  dibujarQR(doc, `QCDIGITAL-LAB|${codigo}|${estadoTxt}`, pageW-margin-16, y-1, 16, [13,21,38]);
+  y += 20;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2);
+  doc.setFontSize(8.5); doc.setTextColor(60,60,60);
+  const metaRow = (label, val, x) => {
+    doc.setFont('helvetica','bold');
+    const labelTxt = label+':';
+    doc.text(labelTxt, x, y);
+    const labelW = doc.getTextWidth(labelTxt);
+    doc.setFont('helvetica','normal');
+    doc.text(String(val||'-'), x+labelW+2, y);
+  };
+  metaRow('Boleta N°', g.boleta, margin);
+  metaRow('Muestra N°', g.muestra, margin+68);
+  metaRow('Dosificacion', g.dosificacion, margin+138);
+  y += 6;
+  metaRow('Fecha muestreo', g.fecha, margin);
+  metaRow('Elemento', g.elemento, margin+68);
+  metaRow('Empresa', g.empresa, margin+138);
+  y += 6;
+  metaRow('Variante', g.barras==='2' ? 'Dos barras (59mm)' : 'Tres barras (41mm)', margin);
+  metaRow('Altura V/H equipo', (g.alturaVertical&&g.alturaHorizontal) ? `${g.alturaVertical}/${g.alturaHorizontal} mm` : '-', margin+68);
+  y += 8;
+
+  const cards = [
+    ['PL promedio (informado)', pdfAsciiSafe(document.getElementById('rc_pl').textContent)],
+    ['Repetibilidad (Tabla 1)', pdfAsciiSafe(document.getElementById('rc_repetibilidad').textContent)],
+    ['Indicios de segregacion', pdfAsciiSafe(document.getElementById('rc_segregacion').textContent)],
+    ['Cumple exigencia', pdfAsciiSafe(document.getElementById('rc_cumple').textContent)],
+  ];
+  const cw = (pageW-margin*2-3*4)/4;
+  cards.forEach((c,i) => {
+    const cx = margin + i*(cw+4);
+    doc.setFillColor(17,26,48); doc.roundedRect(cx, y, cw, 20, 2, 2, 'F');
+    doc.setTextColor(154,165,192); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(c[0], cx+4, y+7);
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold');
+    const raw = String(c[1]);
+    let fontSize = 11;
+    doc.setFontSize(fontSize);
+    let valLines = doc.splitTextToSize(raw, cw-8);
+    if (valLines.length > 1){
+      fontSize = 8.5;
+      doc.setFontSize(fontSize);
+      valLines = doc.splitTextToSize(raw, cw-8);
+    }
+    valLines = valLines.slice(0,2);
+    const lineH = fontSize*0.42;
+    const startY = valLines.length>1 ? y+11.5 : y+15;
+    valLines.forEach((ln,li) => { doc.text(ln, cx+4, startY+li*lineH); });
+  });
+  y += 26;
+
+  // Chart image (izquierda) + tabla de determinaciones (derecha)
+  const chartCanvas = document.getElementById('chartPL');
+  let chartImg = null;
+  try { chartImg = chartCanvas.toDataURL('image/png'); } catch(e){}
+  const chartH = 62, chartW = 82;
+  if (chartImg){
+    doc.setFillColor(12,20,36); doc.rect(margin, y, chartW, chartH, 'F');
+    doc.addImage(chartImg, 'PNG', margin+2, y+2, chartW-4, chartH-4);
+    doc.setDrawColor(90,102,144); doc.setLineWidth(0.3); doc.rect(margin, y, chartW, chartH);
+  }
+
+  const tableX = margin + chartW + 6;
+  const tableW = pageW - margin - tableX;
+  doc.setFontSize(7); doc.setTextColor(20,20,20); doc.setFont('helvetica','bold');
+  doc.text('N°', tableX, y+4);
+  doc.text('H1/H2 (mm)', tableX+10, y+4);
+  doc.text('PL', tableX+42, y+4);
+  doc.text('Segreg.', tableX+58, y+4);
+  doc.setDrawColor(150,150,150); doc.line(tableX, y+6, tableX+tableW, y+6);
+  let ty = y+11;
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(40,40,40);
+  const alturaVertical = parseFloat(g.alturaVertical), alturaHorizontal = parseFloat(g.alturaHorizontal);
+  determinaciones.forEach((d, idx) => {
+    const r = calcularDeterminacion(d, alturaVertical, alturaHorizontal);
+    if (ty > y + chartH - 2) return;
+    doc.text(String(idx+1), tableX, ty);
+    doc.text(r.h1!==null ? `${r.h1}/${r.h2}` : '-', tableX+10, ty);
+    doc.text(r.plInformado!==null ? r.plInformado.toFixed(2) : '-', tableX+42, ty);
+    doc.text(d.segregacion==='si' ? 'Si' : 'No', tableX+58, ty);
+    ty += 5.5;
+  });
+  y += chartH + 8;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2); doc.line(margin, y, pageW-margin, y); y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Informacion general', margin, y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  const obraLines = doc.splitTextToSize('Obra / Proyecto: ' + (g.obra||'-'), pageW-margin*2);
+  doc.text(obraLines, margin, y); y += obraLines.length*4.5;
+  doc.text('Direccion / ubicacion: ' + (g.direccionObra||'-'), margin, y); y+=5;
+  doc.text(`Ensayo realizado por: ${g.responsable||'-'}   Solicitado por: ${g.solicitadoPor||'-'}`, margin, y); y+=5;
+  if (g.observaciones){
+    const obsLines = doc.splitTextToSize('Observaciones: ' + g.observaciones, pageW-margin*2);
+    doc.text(obsLines, margin, y); y += obsLines.length*4.5;
+  }
+  y += 4;
+
+  doc.setDrawColor(42,54,84); doc.line(margin, y, pageW-margin, y); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Firmas', margin, y); y+=5;
+  const fw = (pageW-margin*2-2*6)/3;
+  ROLES.forEach((r,i) => {
+    const fx = margin + i*(fw+6);
+    doc.setDrawColor(180,180,180); doc.rect(fx, y, fw, 28);
+    const f = firmas[r.key];
+    if (f && f.imgDataUrl){
+      try{ doc.addImage(f.imgDataUrl, 'PNG', fx+3, y+2, fw-6, 14); }catch(e){}
+      doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0);
+      doc.text(f.nombre, fx+3, y+20);
+      doc.setFont('helvetica','normal'); doc.text('RUT ' + f.rut, fx+3, y+24);
+      doc.setFontSize(6.5); doc.setTextColor(100,100,100);
+      doc.text(`N° ${codigo}-${r.key.toUpperCase()}`, fx+3, y+27.5);
+    } else {
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Pendiente de firma', fx+fw/2, y+14, {align:'center'});
+    }
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(120,120,120);
+    doc.text(r.label, fx+3, y+ (f? 0 : -2) );
+  });
+  y += 34;
+
+  doc.setFontSize(7); doc.setTextColor(154,165,192);
+  doc.text('QCdigital Laboratorio · Documento generado automaticamente · ' + fmtFechaHora(new Date().toISOString()), margin, pageH-10);
+  doc.text('Codigo de verificacion: ' + codigo, pageW-margin, pageH-10, {align:'right'});
+
+  const fname = `Informe_${codigo}_${validado?'validado':'provisorio'}.pdf`;
+  offerDownload(fname, doc.output('blob'));
+}
+
+document.getElementById('btnPdfProvisorio').addEventListener('click', () => generarPDF(true));
+document.getElementById('btnPdfValidado').addEventListener('click', () => generarPDF(false));
+
+// init
+initFirmas();
+determinaciones.push(nuevaDeterminacion());
+renderDeterminaciones();
+calcularTodo();
+</script>
+</body>
+</html>

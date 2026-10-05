@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCDigital Laboratorio — Densidad Máxima y Mínima</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0d1526;
+    --navy2:#141f38;
+    --navy3:#1b2947;
+    --green:#00e676;
+    --green-dark:#00b85c;
+    --amber:#ffb300;
+    --red:#ff5252;
+    --border:#2a3654;
+    --text:#e8ecf5;
+    --text-dim:#9aa5c0;
+    --card-bg:#111a30;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI', Arial, sans-serif; background:#0a1120; color:var(--text);
+    padding-bottom:60px;
+  }
+  header.app-header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);
+    padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:2px solid var(--green); position:sticky; top:0; z-index:50;
+  }
+  .wordmark{display:flex; align-items:center; gap:12px;}
+  .wordmark .logo{
+    width:38px; height:38px; border-radius:8px;
+    background:linear-gradient(135deg,var(--green) 0%, var(--green-dark) 100%);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy); font-size:18px;
+  }
+  .wordmark .brand{font-size:20px; font-weight:800; letter-spacing:.5px;}
+  .wordmark .brand span{color:var(--green);}
+  .tag{font-size:11px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; margin-top:2px;}
+  .save-bar{display:flex; align-items:center; gap:10px;}
+  .save-status{font-size:12px; color:var(--text-dim);}
+  .save-status.dirty{color:var(--amber);}
+  .save-status.saved{color:var(--green);}
+  button{
+    cursor:pointer; border:1px solid var(--border); background:var(--navy2); color:var(--text);
+    padding:9px 16px; border-radius:7px; font-size:13px; font-weight:600; transition:.15s;
+  }
+  button:hover{border-color:var(--green);}
+  button.primary{background:var(--green); color:var(--navy); border-color:var(--green);}
+  button.primary:hover{background:var(--green-dark);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  main{max-width:1180px; margin:0 auto; padding:24px 20px;}
+  h1{font-size:22px; margin:0 0 4px;}
+  .subtitle{color:var(--text-dim); font-size:13px; margin-bottom:22px;}
+  .card{
+    background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h2{font-size:15px; margin:0 0 16px; color:var(--green); display:flex; align-items:center; gap:8px;}
+  .card h2 .num{
+    width:24px; height:24px; border-radius:50%; background:var(--navy3); color:var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--green);
+  }
+  .subhead{font-size:12px; color:var(--green); text-transform:uppercase; letter-spacing:.5px; margin:16px 0 8px; font-weight:700;}
+  .subhead:first-child{margin-top:0;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12px; color:var(--text-dim);}
+  .field input, .field select, .field textarea{
+    background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:6px; font-size:13px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--green);}
+  .hint{font-size:11px; color:var(--text-dim); margin-top:2px;}
+  .hint.warn{color:var(--amber);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left; padding:8px 6px; color:var(--text-dim); font-weight:600; border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  td{padding:6px; border-bottom:1px solid #1a2440; vertical-align:middle;}
+  td input, td select{
+    width:100%; background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:6px 7px; border-radius:5px; font-size:12.5px; font-family:inherit;
+  }
+  .btn-icon{padding:5px 9px; font-size:12px;}
+  .btn-danger{border-color:var(--red); color:var(--red);}
+  .btn-danger:hover{background:rgba(255,82,82,.12);}
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;}
+  .badge.ok{background:rgba(0,230,118,.15); color:var(--green);}
+  .badge.warn{background:rgba(255,179,0,.15); color:var(--amber);}
+  .badge.bad{background:rgba(255,82,82,.15); color:var(--red);}
+  .badge.neutral{background:rgba(154,165,192,.15); color:var(--text-dim);}
+  .toolbar{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center;}
+  .results-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .result-card{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .result-card .label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .result-card .value{font-size:20px; font-weight:800; margin-top:4px;}
+  .chart-wrap{background:#0c1424; border:1px solid var(--border); border-radius:10px; padding:14px; height:280px;}
+  .chart-caption{font-size:11px; color:var(--text-dim); margin-top:8px; text-align:center;}
+  .firmas-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;}
+  .firma-box{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px;}
+  .firma-box h3{font-size:13px; margin:0 0 4px; display:flex; justify-content:space-between; align-items:center;}
+  .firma-box .rol-tag{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .firma-pad-wrap canvas{width:100%; height:110px; background:#fff; border-radius:6px; cursor:crosshair; touch-action:none;}
+  .firma-estado{font-size:12px; margin-top:8px;}
+  .firma-estado.pendiente{color:var(--text-dim);}
+  .firma-estado.firmado{color:var(--green); font-weight:600;}
+  .footer-note{font-size:11px; color:var(--text-dim); line-height:1.6; margin-top:26px; padding:16px 18px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px;}
+  .footer-note b{color:var(--text);}
+</style>
+</head>
+<body><div id="qcdLabBar" style="position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;background:#0d1526;color:#fff;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:9px 14px;padding-top:calc(9px + env(safe-area-inset-top));border-bottom:2px solid #f5851f"><a href="../index.html#ensayos" style="color:#fff;text-decoration:none">&#8249; Laboratorio</a><span style="flex:1;text-align:center;opacity:.8;font-weight:500">Densidad relativa: densidad máxima y mínima de suelos no coh</span><a href="../documento.html?c=PTE-SU-06" style="color:#f5851f;text-decoration:none">Ver PTE</a></div>
+
+<header class="app-header">
+  <div class="wordmark">
+    <div class="logo">QC</div>
+    <div>
+      <div class="brand">QC<span>digital</span></div>
+      <div class="tag">Módulo Laboratorio</div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <span id="saveStatus" class="save-status">Sin cambios</span>
+    <button id="btnCargar">Cargar avance</button>
+    <input type="file" id="fileInputAvance" accept=".json" style="display:none">
+    <button id="btnGuardar" class="primary">Guardar avance</button>
+  </div>
+</header>
+
+<main>
+  <h1>Densidad Máxima y Mínima</h1>
+  <div class="subtitle">Geotecnia / Suelos · ZN-FOR-310 v11 — ASTM D4254-16 (densidad mínima) y ASTM D4253-16e1 (densidad máxima, mesa vibradora) · Piloto QCDigital</div>
+
+  <div class="card">
+    <h2><span class="num">1</span> Información general</h2>
+    <div class="grid">
+      <div class="field"><label>N° Boleta</label><input id="g_boleta"></div>
+      <div class="field"><label>N° Muestra</label><input id="g_muestra"></div>
+      <div class="field"><label>Fecha de ensayo</label><input type="date" id="g_fecha"></div>
+      <div class="field"><label>Fecha de informe</label><input type="date" id="g_fechaInforme"></div>
+      <div class="field"><label>Empresa solicitante</label><input id="g_empresa"></div>
+      <div class="field"><label>RUT empresa</label><input id="g_rutEmpresa"></div>
+      <div class="field" style="grid-column:span 2"><label>Obra / Proyecto</label><input id="g_obra"></div>
+      <div class="field"><label>Ubicación / Procedencia de la muestra</label><input id="g_direccionObra"></div>
+      <div class="field"><label>Descripción del material</label><input id="g_material"></div>
+      <div class="field"><label>Ensayo realizado por</label><input id="g_responsable"></div>
+      <div class="field"><label>Solicitado por</label><input id="g_solicitadoPor"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Molde de referencia (Densidad Máxima, mesa vibradora)</h2>
+    <div class="grid">
+      <div class="field"><label>Ac — Área del molde (cm²)</label><input type="number" step="0.1" id="g_ac"></div>
+      <div class="field"><label>Vc — Volumen calibrado del molde (cm³)</label><input type="number" step="1" id="g_vc"></div>
+      <div class="field"><label>Tp — Espesor de la placa guía (mm)</label><input type="number" step="0.01" id="g_tp"></div>
+      <div class="field"><label>e — Barra de calibración (mm)</label><input type="number" step="0.01" id="g_e"></div>
+      <div class="field">
+        <label>Sentido de giro del dial</label>
+        <select id="g_rotacion">
+          <option value="horario">Horario</option>
+          <option value="antihorario">Antihorario</option>
+        </select>
+      </div>
+    </div>
+    <div class="hint">V = Vc − Ac·(Ri−Rf+Tp)/10 [horario] o Vc − Ac·(Rf−Ri+Tp)/10 [antihorario], con Ri = Li−e [horario] o Li+e [antihorario] — el /10 convierte el término lineal de mm a cm para que sea dimensionalmente consistente con Ac en cm² y Vc en cm³. Li y Rf se ingresan directamente por molde (sección 4), como el promedio ya calculado de las sub-lecturas izquierda/derecha e inicial/final del dial.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> Densidad Mínima (ASTM D4254 — vaciado directo, sin compactación)</h2>
+    <div style="overflow-x:auto">
+    <table id="tablaMin">
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>Peso de suelo (g)</th>
+          <th>Volumen del molde (cm³)</th>
+          <th>Densidad (g/cm³)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbodyMin"></tbody>
+    </table>
+    </div>
+    <div class="toolbar">
+      <button id="btnAddMin">+ Agregar ensayo (máx. 5)</button>
+    </div>
+    <div class="hint">Densidad = Peso de suelo / Volumen del molde. Regla de combinación: diferencia ≤1% respecto del valor menor → se promedian; entre 1% y 2% → se toma el valor menor; &gt;2% → ensayo no consistente, repetir (Método C repite 3 veces bajo el mismo criterio).</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> Densidad Máxima (ASTM D4253 — mesa vibradora)</h2>
+    <div class="subhead">Condición seca (hasta 3 moldes)</div>
+    <div style="overflow-x:auto">
+    <table id="tablaSeca">
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>Li — Lectura inicial dial (mm)</th>
+          <th>Rf — Lectura final dial (mm)</th>
+          <th>Peso suelo vibrado seco (g)</th>
+          <th>Volumen V (cm³)</th>
+          <th>Densidad (g/cm³)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbodySeca"></tbody>
+    </table>
+    </div>
+    <div class="toolbar">
+      <button id="btnAddSeca">+ Agregar molde (máx. 3)</button>
+    </div>
+
+    <div class="subhead">Condición húmeda (hasta 3 moldes)</div>
+    <div style="overflow-x:auto">
+    <table id="tablaHumeda">
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>Li — Lectura inicial dial (mm)</th>
+          <th>Rf — Lectura final dial (mm)</th>
+          <th>Peso suelo vibrado húmedo (g)</th>
+          <th>Humedad (%)</th>
+          <th>Volumen V (cm³)</th>
+          <th>Densidad seca (g/cm³)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbodyHumeda"></tbody>
+    </table>
+    </div>
+    <div class="toolbar">
+      <button id="btnAddHumeda">+ Agregar molde (máx. 3)</button>
+    </div>
+    <div class="hint">Densidad húmeda = Peso vibrado húmedo / V; Densidad seca = Densidad húmeda / (1 + Humedad/100). El resultado de cada condición es el promedio de sus moldes válidos, con aviso si la diferencia entre ellos supera el 2% de consistencia. Densidad Máxima final = el mayor valor entre la condición seca y la condición húmeda.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span> Resultados</h2>
+    <div class="results-grid">
+      <div class="result-card"><div class="label">Densidad Mínima final</div><div class="value" id="rc_dmin">—</div></div>
+      <div class="result-card"><div class="label">Densidad Máxima — cond. seca</div><div class="value" id="rc_dmaxSeca" style="font-size:17px">—</div></div>
+      <div class="result-card"><div class="label">Densidad Máxima — cond. húmeda</div><div class="value" id="rc_dmaxHumeda" style="font-size:17px">—</div></div>
+      <div class="result-card"><div class="label">Densidad Máxima final</div><div class="value" id="rc_dmax">—</div></div>
+    </div>
+    <div style="margin-top:18px">
+      <div class="chart-wrap"><canvas id="chartDensidades"></canvas></div>
+      <div class="chart-caption">Barras = densidad de cada ensayo/molde (verde=Dmín, ámbar=Dmáx seca, celeste=Dmáx húmeda) · líneas punteadas = Densidad Mínima y Densidad Máxima finales</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span> Observaciones generales</h2>
+    <div class="field"><textarea id="g_observaciones" rows="3" style="width:100%"></textarea></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">7</span> Firmas</h2>
+    <div class="firmas-row" id="firmasRow"></div>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnPdfProvisorio">Generar informe PDF (provisorio)</button>
+    <button id="btnPdfValidado" class="primary">Generar informe PDF</button>
+  </div>
+
+  <div class="footer-note">
+    <b>Notas del piloto QCDigital:</b> reconstruido sobre el formulario oficial ZN-FOR-310 v11 (estático, sin fórmulas vivas — confirmado por inspección directa) y los métodos estándar ASTM D4253-16e1 (densidad máxima) y ASTM D4254-16 (densidad mínima). Dos simplificaciones deliberadas: (1) el formulario define Ac en cm² y Ri/Rf/Tp en mm, por lo que el término lineal se convierte a cm (÷10) antes de restarlo de Vc — conversión no explícita en el formulario original, interpretación de QCDigital para que las unidades sean consistentes; (2) el formulario oficial obtiene cada lectura Li/Rf promediando 2 sub-lecturas (izquierda/derecha del dial) × 2 momentos (inicial/final) — este piloto pide directamente el promedio ya calculado por ensayo. Esta es, de todos los pilotos construidos hasta ahora, la reconstrucción geométricamente más intrincada — <b>conviene revisarla con el equipo de suelos</b> antes de tomarla como plantilla definitiva, en particular la corrección Ri=Li±e y el signo del término (Ri−Rf+Tp) según el sentido de giro. La norma no exige un número específico de firmantes en el informe; este piloto mantiene el flujo estándar de 3 niveles (técnico/revisor/validador) de QCDigital por consistencia con el resto del sistema.
+  </div>
+</main>
+
+<script>
+const ROLES = [
+  {key:'tecnico', label:'Técnico de terreno', desc:'Nivel 1 — Captura'},
+  {key:'revisor', label:'Revisor', desc:'Nivel 2 — Filtro de cálculos y datos'},
+  {key:'validador', label:'Validador', desc:'Nivel 3 — Firma oficial'},
+];
+
+// Listener delegado genérico para todos los campos "g_*" de Información general (incluyendo
+// Ac/Vc/Tp/e/rotacion, que participan del cálculo) -- sin esto, editarlos solos no dispara
+// calcularTodo() ni markDirty() (bug encontrado y corregido en Asentamiento de Cono y Densidad
+// de Hormigón Fresco; se incluye desde el arranque en este piloto).
+document.querySelectorAll('main input, main select, main textarea').forEach(el => {
+  if (el.id && el.id.startsWith('g_')){
+    el.addEventListener('input', () => { markDirty(); calcularTodo(); });
+    el.addEventListener('change', () => { markDirty(); calcularTodo(); });
+  }
+});
+
+// --- Densidad Minima: tabla dinamica, hasta 5 ensayos ---
+let minSeq = 0;
+let ensayosMin = [];
+function nuevoMin(vals){ minSeq++; return Object.assign({id:'m'+minSeq, peso:'', volumen:'', obs:''}, vals||{}); }
+function renderMin(){
+  const tbody = document.getElementById('tbodyMin');
+  tbody.innerHTML = '';
+  ensayosMin.forEach((e, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = e.id;
+    tr.innerHTML = `
+      <td style="text-align:center">${idx+1}</td>
+      <td><input type="number" step="0.1" class="f-peso" value="${e.peso}" style="width:100px"></td>
+      <td><input type="number" step="0.1" class="f-volumen" value="${e.volumen}" style="width:100px"></td>
+      <td><b><span class="f-densidad">—</span></b></td>
+      <td><button class="btn-icon btn-danger f-del">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  attachMinHandlers();
+  calcularTodo();
+}
+function attachMinHandlers(){
+  document.querySelectorAll('#tbodyMin tr').forEach(tr => {
+    const id = tr.dataset.id;
+    const e = ensayosMin.find(x=>x.id===id);
+    const bind = (sel, key) => { const el = tr.querySelector(sel); el.addEventListener('input', () => { e[key]=el.value; markDirty(); calcularTodo(); }); };
+    bind('.f-peso','peso'); bind('.f-volumen','volumen');
+    tr.querySelector('.f-del').addEventListener('click', () => { ensayosMin = ensayosMin.filter(x=>x.id!==id); renderMin(); markDirty(); });
+  });
+}
+document.getElementById('btnAddMin').addEventListener('click', () => {
+  if (ensayosMin.length >= 5){ alert('Máximo 5 ensayos de Densidad Mínima.'); return; }
+  ensayosMin.push(nuevoMin()); renderMin(); markDirty();
+});
+
+// --- Densidad Maxima: condicion seca y humeda, hasta 3 moldes cada una ---
+let secaSeq = 0, humSeq = 0;
+let moldesSeca = [], moldesHumeda = [];
+function nuevoSeca(vals){ secaSeq++; return Object.assign({id:'s'+secaSeq, li:'', rf:'', peso:'', obs:''}, vals||{}); }
+function nuevoHumeda(vals){ humSeq++; return Object.assign({id:'h'+humSeq, li:'', rf:'', peso:'', humedad:'', obs:''}, vals||{}); }
+
+function calcularV(li, rf){
+  const g = serializarGeneral();
+  const Ac = parseFloat(g.ac), Vc = parseFloat(g.vc), Tp = parseFloat(g.tp), e = parseFloat(g.e);
+  if ([Ac,Vc,Tp,e].some(isNaN) || isNaN(li) || isNaN(rf)) return null;
+  const rotacion = g.rotacion;
+  let Ri, termino;
+  if (rotacion === 'horario'){
+    Ri = li - e;
+    termino = Ri - rf + Tp;
+  } else {
+    Ri = li + e;
+    termino = rf - Ri + Tp;
+  }
+  return Vc - Ac*termino/10;
+}
+
+function renderSeca(){
+  const tbody = document.getElementById('tbodySeca');
+  tbody.innerHTML = '';
+  moldesSeca.forEach((m, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = m.id;
+    tr.innerHTML = `
+      <td style="text-align:center">${idx+1}</td>
+      <td><input type="number" step="0.01" class="f-li" value="${m.li}" style="width:90px"></td>
+      <td><input type="number" step="0.01" class="f-rf" value="${m.rf}" style="width:90px"></td>
+      <td><input type="number" step="0.1" class="f-peso" value="${m.peso}" style="width:100px"></td>
+      <td><span class="f-v">—</span></td>
+      <td><b><span class="f-densidad">—</span></b></td>
+      <td><button class="btn-icon btn-danger f-del">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  attachSecaHandlers();
+  calcularTodo();
+}
+function attachSecaHandlers(){
+  document.querySelectorAll('#tbodySeca tr').forEach(tr => {
+    const id = tr.dataset.id;
+    const m = moldesSeca.find(x=>x.id===id);
+    const bind = (sel, key) => { const el = tr.querySelector(sel); el.addEventListener('input', () => { m[key]=el.value; markDirty(); calcularTodo(); }); };
+    bind('.f-li','li'); bind('.f-rf','rf'); bind('.f-peso','peso');
+    tr.querySelector('.f-del').addEventListener('click', () => { moldesSeca = moldesSeca.filter(x=>x.id!==id); renderSeca(); markDirty(); });
+  });
+}
+document.getElementById('btnAddSeca').addEventListener('click', () => {
+  if (moldesSeca.length >= 3){ alert('Máximo 3 moldes en condición seca.'); return; }
+  moldesSeca.push(nuevoSeca()); renderSeca(); markDirty();
+});
+
+function renderHumeda(){
+  const tbody = document.getElementById('tbodyHumeda');
+  tbody.innerHTML = '';
+  moldesHumeda.forEach((m, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = m.id;
+    tr.innerHTML = `
+      <td style="text-align:center">${idx+1}</td>
+      <td><input type="number" step="0.01" class="f-li" value="${m.li}" style="width:90px"></td>
+      <td><input type="number" step="0.01" class="f-rf" value="${m.rf}" style="width:90px"></td>
+      <td><input type="number" step="0.1" class="f-peso" value="${m.peso}" style="width:100px"></td>
+      <td><input type="number" step="0.1" class="f-humedad" value="${m.humedad}" style="width:80px"></td>
+      <td><span class="f-v">—</span></td>
+      <td><b><span class="f-densidad">—</span></b></td>
+      <td><button class="btn-icon btn-danger f-del">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  attachHumedaHandlers();
+  calcularTodo();
+}
+function attachHumedaHandlers(){
+  document.querySelectorAll('#tbodyHumeda tr').forEach(tr => {
+    const id = tr.dataset.id;
+    const m = moldesHumeda.find(x=>x.id===id);
+    const bind = (sel, key) => { const el = tr.querySelector(sel); el.addEventListener('input', () => { m[key]=el.value; markDirty(); calcularTodo(); }); };
+    bind('.f-li','li'); bind('.f-rf','rf'); bind('.f-peso','peso'); bind('.f-humedad','humedad');
+    tr.querySelector('.f-del').addEventListener('click', () => { moldesHumeda = moldesHumeda.filter(x=>x.id!==id); renderHumeda(); markDirty(); });
+  });
+}
+document.getElementById('btnAddHumeda').addEventListener('click', () => {
+  if (moldesHumeda.length >= 3){ alert('Máximo 3 moldes en condición húmeda.'); return; }
+  moldesHumeda.push(nuevoHumeda()); renderHumeda(); markDirty();
+});
+
+// Plugin Chart.js para dibujar 2 lineas de referencia horizontales (Dmin final y Dmax final)
+// directamente sobre el area del grafico -- mismo patron que Asentamiento de Cono/Contenido de
+// Aire: un dataset tipo "line" con pocas categorias en el eje X puede colapsar visualmente.
+const referenceLinesPlugin = {
+  id: 'referenceLines',
+  afterDatasetsDraw(chart, args, opts){
+    if (!opts) return;
+    const {ctx, chartArea, scales} = chart;
+    if (!chartArea || !scales.y) return;
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    [[opts.dmin, '#00e676'], [opts.dmax, '#ffb300']].forEach(([v, color]) => {
+      if (v===null || v===undefined || isNaN(v)) return;
+      const y = scales.y.getPixelForValue(v);
+      if (y < chartArea.top || y > chartArea.bottom) return;
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(chartArea.left, y);
+      ctx.lineTo(chartArea.right, y);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined') Chart.register(referenceLinesPlugin);
+
+let chart = null;
+function calcularTodo(){
+  // --- Densidad Minima ---
+  const filasMin = [];
+  document.querySelectorAll('#tbodyMin tr').forEach(tr => {
+    const peso = parseFloat(tr.querySelector('.f-peso').value);
+    const vol = parseFloat(tr.querySelector('.f-volumen').value);
+    const spanD = tr.querySelector('.f-densidad');
+    let d = null;
+    if (!isNaN(peso) && !isNaN(vol) && vol>0){
+      d = peso/vol;
+      spanD.textContent = d.toFixed(3) + ' g/cm³';
+    } else {
+      spanD.textContent = '—';
+    }
+    filasMin.push(d);
+  });
+  const validosMin = filasMin.filter(d => d!==null);
+  let dminFinal = null, dminEstado = null;
+  if (validosMin.length === 1){
+    dminFinal = validosMin[0]; dminEstado = 'unico';
+  } else if (validosMin.length >= 2){
+    const menor = Math.min(...validosMin), mayor = Math.max(...validosMin);
+    const diffPct = (mayor - menor) / menor * 100;
+    if (diffPct <= 1){
+      dminFinal = validosMin.reduce((s,v)=>s+v,0)/validosMin.length; dminEstado = 'promedio';
+    } else if (diffPct <= 2){
+      dminFinal = menor; dminEstado = 'menor';
+    } else {
+      dminFinal = null; dminEstado = 'no_consistente';
+    }
+  }
+  let dminHtml = '—';
+  if (dminEstado === 'unico') dminHtml = dminFinal.toFixed(3) + ' g/cm³';
+  else if (dminEstado === 'promedio') dminHtml = dminFinal.toFixed(3) + ' g/cm³ <span class="badge ok" style="margin-left:4px">Promedio</span>';
+  else if (dminEstado === 'menor') dminHtml = dminFinal.toFixed(3) + ' g/cm³ <span class="badge warn" style="margin-left:4px">Menor valor</span>';
+  else if (dminEstado === 'no_consistente') dminHtml = '<span class="badge bad">No consistente — repetir</span>';
+  document.getElementById('rc_dmin').innerHTML = dminHtml;
+
+  // --- Densidad Maxima: condicion seca ---
+  const filasSeca = [];
+  document.querySelectorAll('#tbodySeca tr').forEach(tr => {
+    const li = parseFloat(tr.querySelector('.f-li').value);
+    const rf = parseFloat(tr.querySelector('.f-rf').value);
+    const peso = parseFloat(tr.querySelector('.f-peso').value);
+    const vEl = tr.querySelector('.f-v'), dEl = tr.querySelector('.f-densidad');
+    let v = null, d = null;
+    if (!isNaN(li) && !isNaN(rf)){
+      v = calcularV(li, rf);
+      if (v!==null){
+        vEl.textContent = v.toFixed(1);
+        if (!isNaN(peso) && v>0){ d = peso/v; dEl.textContent = d.toFixed(3) + ' g/cm³'; }
+        else dEl.textContent = '—';
+      } else { vEl.textContent = '—'; dEl.textContent = '—'; }
+    } else { vEl.textContent = '—'; dEl.textContent = '—'; }
+    filasSeca.push(d);
+  });
+  const validosSeca = filasSeca.filter(d => d!==null);
+  const dmaxSecaAvg = validosSeca.length ? validosSeca.reduce((s,v)=>s+v,0)/validosSeca.length : null;
+  let secaConsistente = true;
+  if (validosSeca.length >= 2){
+    const menor = Math.min(...validosSeca), mayor = Math.max(...validosSeca);
+    secaConsistente = ((mayor-menor)/menor*100) <= 2;
+  }
+  document.getElementById('rc_dmaxSeca').innerHTML = dmaxSecaAvg!==null
+    ? dmaxSecaAvg.toFixed(3) + ' g/cm³' + (secaConsistente ? '' : ' <span class="badge warn">Revisar consistencia</span>')
+    : '—';
+
+  // --- Densidad Maxima: condicion humeda ---
+  const filasHumeda = [];
+  document.querySelectorAll('#tbodyHumeda tr').forEach(tr => {
+    const li = parseFloat(tr.querySelector('.f-li').value);
+    const rf = parseFloat(tr.querySelector('.f-rf').value);
+    const peso = parseFloat(tr.querySelector('.f-peso').value);
+    const hum = parseFloat(tr.querySelector('.f-humedad').value);
+    const vEl = tr.querySelector('.f-v'), dEl = tr.querySelector('.f-densidad');
+    let v = null, dSeca = null;
+    if (!isNaN(li) && !isNaN(rf)){
+      v = calcularV(li, rf);
+      if (v!==null){
+        vEl.textContent = v.toFixed(1);
+        if (!isNaN(peso) && !isNaN(hum) && v>0){
+          const dHum = peso/v;
+          dSeca = dHum/(1+hum/100);
+          dEl.textContent = dSeca.toFixed(3) + ' g/cm³';
+        } else dEl.textContent = '—';
+      } else { vEl.textContent = '—'; dEl.textContent = '—'; }
+    } else { vEl.textContent = '—'; dEl.textContent = '—'; }
+    filasHumeda.push(dSeca);
+  });
+  const validosHumeda = filasHumeda.filter(d => d!==null);
+  const dmaxHumedaAvg = validosHumeda.length ? validosHumeda.reduce((s,v)=>s+v,0)/validosHumeda.length : null;
+  let humedaConsistente = true;
+  if (validosHumeda.length >= 2){
+    const menor = Math.min(...validosHumeda), mayor = Math.max(...validosHumeda);
+    humedaConsistente = ((mayor-menor)/menor*100) <= 2;
+  }
+  document.getElementById('rc_dmaxHumeda').innerHTML = dmaxHumedaAvg!==null
+    ? dmaxHumedaAvg.toFixed(3) + ' g/cm³' + (humedaConsistente ? '' : ' <span class="badge warn">Revisar consistencia</span>')
+    : '—';
+
+  // --- Densidad Maxima final ---
+  let dmaxFinal = null;
+  if (dmaxSecaAvg!==null && dmaxHumedaAvg!==null) dmaxFinal = Math.max(dmaxSecaAvg, dmaxHumedaAvg);
+  else if (dmaxSecaAvg!==null) dmaxFinal = dmaxSecaAvg;
+  else if (dmaxHumedaAvg!==null) dmaxFinal = dmaxHumedaAvg;
+  document.getElementById('rc_dmax').textContent = dmaxFinal!==null ? dmaxFinal.toFixed(3) + ' g/cm³' : '—';
+
+  dibujarChart(filasMin, filasSeca, filasHumeda, dminEstado==='no_consistente'?null:dminFinal, dmaxFinal);
+}
+
+function dibujarChart(filasMin, filasSeca, filasHumeda, dminFinal, dmaxFinal){
+  const ctx = document.getElementById('chartDensidades').getContext('2d');
+  const labels = [], data = [], colors = [];
+  filasMin.forEach((d,i) => { labels.push('Dmín '+(i+1)); data.push(d!==null?d:0); colors.push('#00e676'); });
+  filasSeca.forEach((d,i) => { labels.push('Dmáx-S '+(i+1)); data.push(d!==null?d:0); colors.push('#ffb300'); });
+  filasHumeda.forEach((d,i) => { labels.push('Dmáx-H '+(i+1)); data.push(d!==null?d:0); colors.push('#4fc3f7'); });
+  if (chart) chart.destroy();
+  const valoresEje = data.filter(v=>v>0);
+  if (dminFinal!==null) valoresEje.push(dminFinal);
+  if (dmaxFinal!==null) valoresEje.push(dmaxFinal);
+  // .toPrecision+parseFloat evita que el limite del eje quede con ruido de coma flotante
+  // (p.ej. 1.9650000000000003), que Chart.js dibujaria tal cual en el tick superior del grafico.
+  const minV = valoresEje.length ? parseFloat((Math.min(...valoresEje) * 0.9).toPrecision(6)) : 0;
+  const maxV = valoresEje.length ? parseFloat((Math.max(...valoresEje) * 1.1).toPrecision(6)) : 2;
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label:'Densidad (g/cm³)', data, backgroundColor: colors, borderRadius:4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display:false }, referenceLines: { dmin: dminFinal, dmax: dmaxFinal } },
+      scales: {
+        x: { ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' } },
+        y: { min:minV, max:maxV, ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' }, title:{display:true,text:'Densidad (g/cm³)',color:'#9aa5c0'} }
+      }
+    }
+  });
+}
+
+// --- Firmas ---
+let firmas = {};
+function initFirmas(){
+  const wrap = document.getElementById('firmasRow');
+  wrap.innerHTML = '';
+  ROLES.forEach((r,i) => {
+    const box = document.createElement('div');
+    box.className = 'firma-box';
+    box.innerHTML = `
+      <h3>${r.label} <span class="rol-tag">${r.desc}</span></h3>
+      <div class="field" style="margin-bottom:6px"><label>Nombre completo</label><input id="firmaNombre_${r.key}"></div>
+      <div class="field" style="margin-bottom:6px"><label>RUT</label><input id="firmaRut_${r.key}"></div>
+      <div class="firma-pad-wrap"><canvas id="firmaPad_${r.key}" width="400" height="110"></canvas></div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="btn-icon" data-limpiar="${r.key}">Limpiar</button>
+        <button class="btn-icon primary" data-firmar="${r.key}" ${i>0?'disabled':''}>Firmar</button>
+      </div>
+      <div class="firma-estado pendiente" id="firmaEstado_${r.key}">Pendiente de firma</div>
+    `;
+    wrap.appendChild(box);
+  });
+  ROLES.forEach(r => setupFirmaPad(r.key));
+  wrap.querySelectorAll('[data-limpiar]').forEach(btn => btn.addEventListener('click', () => limpiarPad(btn.dataset.limpiar)));
+  wrap.querySelectorAll('[data-firmar]').forEach(btn => btn.addEventListener('click', () => firmarRol(btn.dataset.firmar)));
+}
+
+const padCtx = {};
+function setupFirmaPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#0d1526'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  padCtx[key] = {ctx, drawing:false, hasDrawn:false};
+  const getPos = (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+    return {x: cx * (canvas.width/rect.width), y: cy * (canvas.height/rect.height)};
+  };
+  const start = (ev) => { ev.preventDefault(); const p = getPos(ev); padCtx[key].drawing=true; padCtx[key].hasDrawn=true; ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  const move = (ev) => { if(!padCtx[key].drawing) return; ev.preventDefault(); const p = getPos(ev); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+  const end = () => { padCtx[key].drawing=false; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function limpiarPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  padCtx[key].hasDrawn = false;
+}
+
+function firmarRol(key){
+  const nombre = document.getElementById('firmaNombre_'+key).value.trim();
+  const rut = document.getElementById('firmaRut_'+key).value.trim();
+  if (!nombre || !rut){ alert('Completa nombre y RUT antes de firmar.'); return; }
+  if (!padCtx[key].hasDrawn){ alert('Dibuja la firma en el recuadro antes de firmar.'); return; }
+  const canvas = document.getElementById('firmaPad_'+key);
+  const imgDataUrl = canvas.toDataURL('image/png');
+  firmas[key] = {nombre, rut, imgDataUrl, firmadoAt: new Date().toISOString()};
+  const estadoEl = document.getElementById('firmaEstado_'+key);
+  estadoEl.textContent = 'Firmado — ' + fmtFechaHora(firmas[key].firmadoAt);
+  estadoEl.className = 'firma-estado firmado';
+  const idx = ROLES.findIndex(r=>r.key===key);
+  document.getElementById('firmaNombre_'+key).disabled = true;
+  document.getElementById('firmaRut_'+key).disabled = true;
+  document.querySelector(`[data-firmar="${key}"]`).disabled = true;
+  document.querySelector(`[data-limpiar="${key}"]`).disabled = true;
+  if (idx+1 < ROLES.length){
+    const nextBtn = document.querySelector(`[data-firmar="${ROLES[idx+1].key}"]`);
+    if (nextBtn) nextBtn.disabled = false;
+  }
+  markDirty(); persistSavedIndicator();
+}
+
+function fmtFechaHora(iso){
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// --- Descarga: capacidad "downloads" en Artifact publicado, o descarga clasica por blob ---
+async function offerDownload(filename, dataOrBlob){
+  if (window.claude && typeof window.claude.use === 'function'){
+    try {
+      const downloads = await window.claude.use('downloads');
+      if (downloads){
+        try{
+          await downloads.save({filename, data: dataOrBlob});
+          return true;
+        }catch(err){
+          const code = err && err.code;
+          if (code === 'declined'){
+          } else if (code === 'extension_not_enabled' || code === 'rejected_extension'){
+            alert('Este visor no permite descargar archivos ".' + filename.split('.').pop() + '" directamente. Abre el piloto como archivo HTML (descargado desde el chat) para generar el PDF/JSON sin esta restricción.');
+          } else {
+            alert('No se pudo guardar el archivo: ' + (err && err.message ? err.message : 'error desconocido'));
+          }
+          return false;
+        }
+      }
+    } catch(e) { /* sigue al metodo clasico */ }
+  }
+  const blob = (dataOrBlob instanceof Blob) ? dataOrBlob : new Blob([dataOrBlob], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// --- Guardar / cargar avance ---
+let dirty = false;
+function markDirty(){ dirty = true; const el=document.getElementById('saveStatus'); el.textContent='Cambios sin guardar'; el.className='save-status dirty'; }
+function persistSavedIndicator(msg){
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg || 'Guardado · ' + fmtFechaHora(new Date().toISOString());
+  el.className = 'save-status saved';
+  dirty = false;
+}
+window.addEventListener('beforeunload', (e) => { if (dirty){ e.preventDefault(); e.returnValue=''; } });
+
+function serializarGeneral(){
+  const ids = ['g_boleta','g_muestra','g_fecha','g_fechaInforme','g_empresa','g_rutEmpresa',
+    'g_obra','g_direccionObra','g_material','g_responsable','g_solicitadoPor',
+    'g_ac','g_vc','g_tp','g_e','g_rotacion','g_observaciones'];
+  const out = {};
+  ids.forEach(id => { out[id.replace('g_','')] = document.getElementById(id).value; });
+  return out;
+}
+function restaurarGeneral(g){
+  if (!g) return;
+  Object.keys(g).forEach(k => {
+    const el = document.getElementById('g_'+k);
+    if (!el) return;
+    el.value = g[k];
+  });
+}
+
+document.getElementById('btnGuardar').addEventListener('click', async () => {
+  const data = {
+    tipo: 'densidad_maxima_minima', version: 1,
+    general: serializarGeneral(), ensayosMin, moldesSeca, moldesHumeda, firmas,
+    guardadoAt: new Date().toISOString(),
+  };
+  const muestra = document.getElementById('g_muestra').value || 'sinmuestra';
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  const ok = await offerDownload(`Avance_DensidadMaxMin_${muestra}_${stamp}.json`, JSON.stringify(data,null,2));
+  if (ok) persistSavedIndicator();
+});
+
+document.getElementById('btnCargar').addEventListener('click', () => document.getElementById('fileInputAvance').click());
+document.getElementById('fileInputAvance').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      restaurarGeneral(data.general);
+      ensayosMin = (data.ensayosMin || []).map(x => Object.assign(nuevoMin(), x));
+      renderMin();
+      moldesSeca = (data.moldesSeca || []).map(x => Object.assign(nuevoSeca(), x));
+      renderSeca();
+      moldesHumeda = (data.moldesHumeda || []).map(x => Object.assign(nuevoHumeda(), x));
+      renderHumeda();
+      firmas = data.firmas || {};
+      initFirmas();
+      Object.keys(firmas).forEach(key => {
+        const f = firmas[key];
+        document.getElementById('firmaNombre_'+key).value = f.nombre;
+        document.getElementById('firmaRut_'+key).value = f.rut;
+        document.getElementById('firmaNombre_'+key).disabled = true;
+        document.getElementById('firmaRut_'+key).disabled = true;
+        const canvas = document.getElementById('firmaPad_'+key);
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+        img.src = f.imgDataUrl;
+        padCtx[key].hasDrawn = true;
+        const estadoEl = document.getElementById('firmaEstado_'+key);
+        estadoEl.textContent = 'Firmado — ' + fmtFechaHora(f.firmadoAt);
+        estadoEl.className = 'firma-estado firmado';
+        const btnFirmar = document.querySelector(`[data-firmar="${key}"]`);
+        if (btnFirmar) btnFirmar.disabled = true;
+        const btnLimpiar = document.querySelector(`[data-limpiar="${key}"]`);
+        if (btnLimpiar) btnLimpiar.disabled = true;
+      });
+      ROLES.forEach((r,idx) => {
+        if (!firmas[r.key] && idx>0){
+          const prevFirmado = !!firmas[ROLES[idx-1].key];
+          const btn = document.querySelector(`[data-firmar="${r.key}"]`);
+          if (btn) btn.disabled = !prevFirmado;
+        }
+      });
+      persistSavedIndicator('Avance cargado · ' + fmtFechaHora(new Date().toISOString()));
+      calcularTodo();
+    }catch(err){
+      alert('No se pudo leer el archivo de avance: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+// --- QR ---
+function dibujarQR(doc, text, x, y, size, moduleColor){
+  const qr = qrcode(0, 'M');
+  qr.addData(text); qr.make();
+  const count = qr.getModuleCount();
+  const pad = size*0.08;
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(x-pad, y-pad, size+pad*2, size+pad*2, 1.2, 1.2, 'F');
+  const cell = size/count;
+  doc.setFillColor(moduleColor[0], moduleColor[1], moduleColor[2]);
+  for (let r=0;r<count;r++){
+    for (let c=0;c<count;c++){
+      if (qr.isDark(r,c)){
+        doc.rect(x+c*cell, y+r*cell, cell+0.01, cell+0.01, 'F');
+      }
+    }
+  }
+}
+
+// Sanitiza caracteres Unicode que jsPDF/Helvetica no renderiza (mismo problema documentado en
+// Densidad de Particulas Solidas, Densidad de Hormigon Fresco y Contenido de Aire).
+function pdfAsciiSafe(str){
+  return String(str)
+    .replace(/³/g, '3')
+    .replace(/²/g, '2')
+    .replace(/Δ/g, 'diferencia ')
+    .replace(/≤/g, '<=')
+    .replace(/≥/g, '>=')
+    .replace(/ρ/g, 'rho');
+}
+
+// --- PDF "Alternativa C" ---
+function generarPDF(soloProvisorio){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const pageW = 216, pageH = 279, margin = 14;
+  const g = serializarGeneral();
+  const muestra = g.muestra || 'S-N';
+  const anio = new Date().getFullYear();
+  const codigo = `DMM-${anio}-${muestra}`;
+
+  const nivelesFirmados = ROLES.filter(r => firmas[r.key]).length;
+  const validado = !soloProvisorio && nivelesFirmados === ROLES.length;
+  const estadoTxt = validado ? 'Informe validado' : 'Resultado provisorio';
+  const estadoColor = validado ? [0,184,92] : [255,179,0];
+
+  doc.setFillColor(13,21,38); doc.rect(0,0,pageW,26,'F');
+  doc.setFillColor(0,230,118); doc.roundedRect(margin, 7, 12, 12, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('QC', margin+6, 15, {align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(15);
+  doc.text('QCdigital', margin+18, 13);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('MODULO LABORATORIO', margin+18, 18.5);
+  doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Densidad Maxima y Minima', pageW-margin, 15, {align:'right'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('Suelos — ASTM D4253 / D4254', pageW-margin, 20, {align:'right'});
+
+  let y = 30;
+  doc.setFillColor(estadoColor[0],estadoColor[1],estadoColor[2]);
+  doc.roundedRect(margin, y, pageW-margin*2, 14, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(estadoTxt, margin+6, y+9);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Codigo: ' + codigo, margin+70, y+9);
+  dibujarQR(doc, `QCDIGITAL-LAB|${codigo}|${estadoTxt}`, pageW-margin-16, y-1, 16, [13,21,38]);
+  y += 20;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2);
+  doc.setFontSize(8.5); doc.setTextColor(60,60,60);
+  const metaRow = (label, val, x) => {
+    doc.setFont('helvetica','bold');
+    const labelTxt = label+':';
+    doc.text(labelTxt, x, y);
+    const labelW = doc.getTextWidth(labelTxt);
+    doc.setFont('helvetica','normal');
+    doc.text(String(val||'-'), x+labelW+2, y);
+  };
+  metaRow('Boleta N°', g.boleta, margin);
+  metaRow('Muestra N°', g.muestra, margin+68);
+  metaRow('Material', g.material, margin+138);
+  y += 6;
+  metaRow('Fecha ensayo', g.fecha, margin);
+  metaRow('Fecha informe', g.fechaInforme, margin+68);
+  metaRow('Empresa', g.empresa, margin+138);
+  y += 8;
+
+  const cards = [
+    ['Densidad Minima', pdfAsciiSafe(document.getElementById('rc_dmin').textContent)],
+    ['Dmax cond. seca', pdfAsciiSafe(document.getElementById('rc_dmaxSeca').textContent)],
+    ['Dmax cond. humeda', pdfAsciiSafe(document.getElementById('rc_dmaxHumeda').textContent)],
+    ['Densidad Maxima final', pdfAsciiSafe(document.getElementById('rc_dmax').textContent)],
+  ];
+  const cw = (pageW-margin*2-3*4)/4;
+  cards.forEach((c,i) => {
+    const cx = margin + i*(cw+4);
+    doc.setFillColor(17,26,48); doc.roundedRect(cx, y, cw, 20, 2, 2, 'F');
+    doc.setTextColor(154,165,192); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(c[0], cx+4, y+7);
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold');
+    const raw = String(c[1]);
+    let fontSize = 11;
+    doc.setFontSize(fontSize);
+    let valLines = doc.splitTextToSize(raw, cw-8);
+    if (valLines.length > 1){
+      fontSize = 8.5;
+      doc.setFontSize(fontSize);
+      valLines = doc.splitTextToSize(raw, cw-8);
+    }
+    valLines = valLines.slice(0,2);
+    const lineH = fontSize*0.42;
+    const startY = valLines.length>1 ? y+11.5 : y+15;
+    valLines.forEach((ln,li) => { doc.text(ln, cx+4, startY+li*lineH); });
+  });
+  y += 26;
+
+  // Chart image (izquierda) + tabla resumen (derecha)
+  const chartCanvas = document.getElementById('chartDensidades');
+  let chartImg = null;
+  try { chartImg = chartCanvas.toDataURL('image/png'); } catch(e){}
+  const chartH = 62, chartW = 88;
+  if (chartImg){
+    doc.setFillColor(12,20,36); doc.rect(margin, y, chartW, chartH, 'F');
+    doc.addImage(chartImg, 'PNG', margin+2, y+2, chartW-4, chartH-4);
+    doc.setDrawColor(90,102,144); doc.setLineWidth(0.3); doc.rect(margin, y, chartW, chartH);
+  }
+
+  const tableX = margin + chartW + 6;
+  const tableW = pageW - margin - tableX;
+  doc.setFontSize(7.5); doc.setTextColor(20,20,20); doc.setFont('helvetica','bold');
+  doc.text('Ensayo', tableX, y+4);
+  doc.text('Densidad (g/cm3)', tableX+40, y+4);
+  doc.setDrawColor(150,150,150); doc.line(tableX, y+6, tableX+tableW, y+6);
+  let ty = y+11;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(40,40,40);
+  const filasResumen = [];
+  ensayosMin.forEach((e,i) => { const d = (parseFloat(e.peso)/parseFloat(e.volumen)); filasResumen.push(['Dmin '+(i+1), isNaN(d)?'-':d.toFixed(3)]); });
+  moldesSeca.forEach((m,i) => { const v = calcularV(parseFloat(m.li), parseFloat(m.rf)); const d = v? parseFloat(m.peso)/v : NaN; filasResumen.push(['Dmax-seca '+(i+1), isNaN(d)?'-':d.toFixed(3)]); });
+  moldesHumeda.forEach((m,i) => { const v = calcularV(parseFloat(m.li), parseFloat(m.rf)); const dh = v? parseFloat(m.peso)/v : NaN; const ds = dh/(1+parseFloat(m.humedad)/100); filasResumen.push(['Dmax-humeda '+(i+1), isNaN(ds)?'-':ds.toFixed(3)]); });
+  filasResumen.forEach(f => {
+    if (ty > y + chartH - 2) return;
+    doc.text(f[0], tableX, ty);
+    doc.text(f[1], tableX+40, ty);
+    ty += 5.2;
+  });
+  y += chartH + 8;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2); doc.line(margin, y, pageW-margin, y); y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Informacion general', margin, y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  const obraLines = doc.splitTextToSize('Obra / Proyecto: ' + (g.obra||'-'), pageW-margin*2);
+  doc.text(obraLines, margin, y); y += obraLines.length*4.5;
+  doc.text('Ubicacion / procedencia: ' + (g.direccionObra||'-'), margin, y); y+=5;
+  doc.text(`Molde: Ac=${g.ac||'-'} cm2, Vc=${g.vc||'-'} cm3, Tp=${g.tp||'-'} mm, e=${g.e||'-'} mm, giro ${g.rotacion==='antihorario'?'antihorario':'horario'}`, margin, y); y+=5;
+  doc.text(`Ensayo realizado por: ${g.responsable||'-'}   Solicitado por: ${g.solicitadoPor||'-'}`, margin, y); y+=5;
+  if (g.observaciones){
+    const obsLines = doc.splitTextToSize('Observaciones: ' + g.observaciones, pageW-margin*2);
+    doc.text(obsLines, margin, y); y += obsLines.length*4.5;
+  }
+  y += 4;
+
+  doc.setDrawColor(42,54,84); doc.line(margin, y, pageW-margin, y); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Firmas', margin, y); y+=5;
+  const fw = (pageW-margin*2-2*6)/3;
+  ROLES.forEach((r,i) => {
+    const fx = margin + i*(fw+6);
+    doc.setDrawColor(180,180,180); doc.rect(fx, y, fw, 28);
+    const f = firmas[r.key];
+    if (f && f.imgDataUrl){
+      try{ doc.addImage(f.imgDataUrl, 'PNG', fx+3, y+2, fw-6, 14); }catch(e){}
+      doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0);
+      doc.text(f.nombre, fx+3, y+20);
+      doc.setFont('helvetica','normal'); doc.text('RUT ' + f.rut, fx+3, y+24);
+      doc.setFontSize(6.5); doc.setTextColor(100,100,100);
+      doc.text(`N° ${codigo}-${r.key.toUpperCase()}`, fx+3, y+27.5);
+    } else {
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Pendiente de firma', fx+fw/2, y+14, {align:'center'});
+    }
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(120,120,120);
+    doc.text(r.label, fx+3, y+ (f? 0 : -2) );
+  });
+  y += 34;
+
+  doc.setFontSize(7); doc.setTextColor(154,165,192);
+  doc.text('QCdigital Laboratorio · Documento generado automaticamente · ' + fmtFechaHora(new Date().toISOString()), margin, pageH-10);
+  doc.text('Codigo de verificacion: ' + codigo, pageW-margin, pageH-10, {align:'right'});
+
+  const fname = `Informe_${codigo}_${validado?'validado':'provisorio'}.pdf`;
+  offerDownload(fname, doc.output('blob'));
+}
+
+document.getElementById('btnPdfProvisorio').addEventListener('click', () => generarPDF(true));
+document.getElementById('btnPdfValidado').addEventListener('click', () => generarPDF(false));
+
+// init
+initFirmas();
+ensayosMin.push(nuevoMin());
+renderMin();
+moldesSeca.push(nuevoSeca());
+renderSeca();
+moldesHumeda.push(nuevoHumeda());
+renderHumeda();
+calcularTodo();
+</script>
+</body>
+</html>

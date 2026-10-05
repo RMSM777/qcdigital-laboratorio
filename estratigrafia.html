@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCDigital Laboratorio — Perfil Estratigráfico</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0d1526;
+    --navy2:#141f38;
+    --navy3:#1b2947;
+    --green:#00e676;
+    --green-dark:#00b85c;
+    --amber:#ffb300;
+    --red:#ff5252;
+    --border:#2a3654;
+    --text:#e8ecf5;
+    --text-dim:#9aa5c0;
+    --card-bg:#111a30;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI', Arial, sans-serif; background:#0a1120; color:var(--text);
+    padding-bottom:60px;
+  }
+  header.app-header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);
+    padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:2px solid var(--green); position:sticky; top:0; z-index:50;
+  }
+  .wordmark{display:flex; align-items:center; gap:12px;}
+  .wordmark .logo{
+    width:38px; height:38px; border-radius:8px;
+    background:linear-gradient(135deg,var(--green) 0%, var(--green-dark) 100%);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy); font-size:18px;
+  }
+  .wordmark .brand{font-size:20px; font-weight:800; letter-spacing:.5px;}
+  .wordmark .brand span{color:var(--green);}
+  .tag{font-size:11px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; margin-top:2px;}
+  .save-bar{display:flex; align-items:center; gap:10px;}
+  .save-status{font-size:12px; color:var(--text-dim);}
+  .save-status.dirty{color:var(--amber);}
+  .save-status.saved{color:var(--green);}
+  button{
+    cursor:pointer; border:1px solid var(--border); background:var(--navy2); color:var(--text);
+    padding:9px 16px; border-radius:7px; font-size:13px; font-weight:600; transition:.15s;
+  }
+  button:hover{border-color:var(--green);}
+  button.primary{background:var(--green); color:var(--navy); border-color:var(--green);}
+  button.primary:hover{background:var(--green-dark);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  main{max-width:1180px; margin:0 auto; padding:24px 20px;}
+  h1{font-size:22px; margin:0 0 4px;}
+  .subtitle{color:var(--text-dim); font-size:13px; margin-bottom:22px;}
+  .card{
+    background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h2{font-size:15px; margin:0 0 16px; color:var(--green); display:flex; align-items:center; gap:8px;}
+  .card h2 .num{
+    width:24px; height:24px; border-radius:50%; background:var(--navy3); color:var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--green);
+  }
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12px; color:var(--text-dim);}
+  .field input, .field select, .field textarea{
+    background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:6px; font-size:13px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--green);}
+  .field.checkline{flex-direction:row; align-items:center; gap:8px;}
+  .field.checkline label{font-size:13px; color:var(--text);}
+  .hint{font-size:11px; color:var(--text-dim); margin-top:2px;}
+  .hint.warn{color:var(--amber);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left; padding:8px 6px; color:var(--text-dim); font-weight:600; border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  td{padding:6px; border-bottom:1px solid #1a2440; vertical-align:middle;}
+  td input, td select, td textarea{
+    width:100%; background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:6px 7px; border-radius:5px; font-size:12.5px; font-family:inherit;
+  }
+  td textarea{resize:vertical; min-height:34px;}
+  .row-actions{display:flex; gap:6px;}
+  .btn-icon{padding:5px 9px; font-size:12px;}
+  .btn-danger{border-color:var(--red); color:var(--red);}
+  .btn-danger:hover{background:rgba(255,82,82,.12);}
+  .badge{
+    display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700;
+  }
+  .badge.ok{background:rgba(0,230,118,.15); color:var(--green);}
+  .badge.warn{background:rgba(255,179,0,.15); color:var(--amber);}
+  .badge.bad{background:rgba(255,82,82,.15); color:var(--red);}
+  .toolbar{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;}
+  .results-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .result-card{
+    background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
+  }
+  .result-card .label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .result-card .value{font-size:22px; font-weight:800; margin-top:4px;}
+  .result-card .value.small{font-size:16px;}
+  .two-col{display:grid; grid-template-columns:280px 1fr; gap:20px; align-items:start;}
+  @media (max-width:820px){ .two-col{grid-template-columns:1fr;} }
+  #columnaWrap{
+    background:#0c1424; border:1px solid var(--border); border-radius:10px; padding:10px;
+    display:flex; justify-content:center;
+  }
+  .legend-note{font-size:11px; color:var(--text-dim); margin-top:8px; text-align:center;}
+  .firmas-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;}
+  .firma-box{
+    background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px;
+  }
+  .firma-box h3{font-size:13px; margin:0 0 4px; display:flex; justify-content:space-between; align-items:center;}
+  .firma-box .rol-tag{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .firma-pad-wrap canvas{
+    width:100%; height:110px; background:#fff; border-radius:6px; cursor:crosshair; touch-action:none;
+  }
+  .firma-estado{font-size:12px; margin-top:8px;}
+  .firma-estado.pendiente{color:var(--text-dim);}
+  .firma-estado.firmado{color:var(--green); font-weight:600;}
+  .footer-note{font-size:11px; color:var(--text-dim); line-height:1.6; margin-top:26px; padding:16px 18px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px;}
+  .footer-note b{color:var(--text);}
+  .exig-row{display:flex; gap:16px; flex-wrap:wrap; align-items:center;}
+</style>
+</head>
+<body><div id="qcdLabBar" style="position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;background:#0d1526;color:#fff;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:9px 14px;padding-top:calc(9px + env(safe-area-inset-top));border-bottom:2px solid #f5851f"><a href="../index.html#ensayos" style="color:#fff;text-decoration:none">&#8249; Laboratorio</a><span style="flex:1;text-align:center;opacity:.8;font-weight:500">Descripción e identificación de suelos</span><a href="../documento.html?c=PTE-SU-13" style="color:#f5851f;text-decoration:none">Ver PTE</a></div>
+
+<header class="app-header">
+  <div class="wordmark">
+    <div class="logo">QC</div>
+    <div>
+      <div class="brand">QC<span>digital</span></div>
+      <div class="tag">Módulo Laboratorio</div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <span id="saveStatus" class="save-status">Sin cambios</span>
+    <button id="btnCargar">Cargar avance</button>
+    <input type="file" id="fileInputAvance" accept=".json" style="display:none">
+    <button id="btnGuardar" class="primary">Guardar avance</button>
+  </div>
+</header>
+
+<main>
+  <h1>Perfil Estratigráfico — Log de Sondaje / Calicata</h1>
+  <div class="subtitle">Geotecnia / Suelos · Descripción visual-manual de suelos (ref. ASTM D2488) y clasificación USCS (ref. ASTM D2487) · Piloto QCDigital</div>
+
+  <div class="card">
+    <h2><span class="num">1</span> Información general</h2>
+    <div class="grid">
+      <div class="field"><label>N° Boleta</label><input id="g_boleta"></div>
+      <div class="field"><label>N° Sondaje / Calicata</label><input id="g_muestra"></div>
+      <div class="field"><label>Tipo de exploración</label>
+        <select id="g_tipoExploracion">
+          <option value="calicata">Calicata a mano</option>
+          <option value="sondaje_manual">Sondaje manual</option>
+          <option value="sondaje_mecanico">Sondaje mecánico</option>
+        </select>
+      </div>
+      <div class="field"><label>Fecha de inicio</label><input type="date" id="g_fechaInicio"></div>
+      <div class="field"><label>Fecha de término</label><input type="date" id="g_fechaTermino"></div>
+      <div class="field"><label>Empresa solicitante</label><input id="g_empresa"></div>
+      <div class="field"><label>RUT empresa</label><input id="g_rutEmpresa"></div>
+      <div class="field" style="grid-column:span 2"><label>Obra / Proyecto</label><input id="g_obra"></div>
+      <div class="field"><label>Dirección / Ubicación de la obra</label><input id="g_direccionObra"></div>
+      <div class="field"><label>Coordenadas UTM Este</label><input id="g_utmEste" placeholder="ej. 345678"></div>
+      <div class="field"><label>Coordenadas UTM Norte</label><input id="g_utmNorte" placeholder="ej. 6234567"></div>
+      <div class="field"><label>Huso / Datum</label><input id="g_huso" placeholder="ej. 19S WGS84" value="19S WGS84"></div>
+      <div class="field"><label>Cota terreno (m s.n.m.)</label><input type="number" step="0.01" id="g_cotaTerreno"></div>
+      <div class="field"><label>Método de perforación / excavación</label><input id="g_metodo" placeholder="ej. Retroexcavadora, rotopercusión..."></div>
+      <div class="field"><label>Diámetro (cm, si aplica sondaje)</label><input type="number" step="0.1" id="g_diametro"></div>
+      <div class="field"><label>Profundidad total explorada (m)</label><input type="number" step="0.01" id="g_profundidadTotal"></div>
+      <div class="field checkline" style="align-self:end">
+        <input type="checkbox" id="g_nfNoDetectado">
+        <label for="g_nfNoDetectado">Nivel freático no detectado</label>
+      </div>
+      <div class="field"><label>Nivel freático (profundidad, m)</label><input type="number" step="0.01" id="g_nivelFreatico"><span class="hint" id="hintNf"></span></div>
+      <div class="field"><label>Responsable de terreno</label><input id="g_responsableTerreno"></div>
+      <div class="field"><label>Solicitado por</label><input id="g_solicitadoPor"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Tabla de estratos</h2>
+    <div style="overflow-x:auto">
+    <table id="tablaEstratos">
+      <thead>
+        <tr>
+          <th>N°</th><th>Desde (m)</th><th>Hasta (m)</th><th>Espesor (m)</th>
+          <th>USCS</th><th>Color</th><th style="min-width:220px">Descripción</th>
+          <th>Muestra</th><th>N° golpes (SPT)</th><th>Observaciones</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="tbodyEstratos"></tbody>
+    </table>
+    </div>
+    <div class="toolbar">
+      <button id="btnAddEstrato">+ Agregar estrato</button>
+      <span id="continuidadBadge" class="badge ok" style="align-self:center">Sin estratos</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> Resultados</h2>
+    <div class="results-grid">
+      <div class="result-card"><div class="label">Profundidad total</div><div class="value" id="rc_profTotal">—</div></div>
+      <div class="result-card"><div class="label">N° de estratos</div><div class="value" id="rc_nEstratos">—</div></div>
+      <div class="result-card"><div class="label">Nivel freático</div><div class="value small" id="rc_nf">—</div></div>
+      <div class="result-card"><div class="label">Muestras extraídas</div><div class="value" id="rc_nMuestras">—</div></div>
+    </div>
+    <div class="two-col" style="margin-top:18px">
+      <div>
+        <div id="columnaWrap"><canvas id="columnaCanvas" width="220" height="420"></canvas></div>
+        <div class="legend-note">Columna estratigráfica referencial — color por grupo USCS</div>
+      </div>
+      <div>
+        <div id="tablaResumenWrap" style="overflow-x:auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> Observaciones generales</h2>
+    <div class="field"><textarea id="g_observaciones" rows="3" style="width:100%"></textarea></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span> Firmas</h2>
+    <div class="firmas-row" id="firmasRow"></div>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnPdfProvisorio">Generar informe PDF (provisorio)</button>
+    <button id="btnPdfValidado" class="primary">Generar informe PDF</button>
+  </div>
+
+  <div class="footer-note">
+    <b>Notas del piloto QCDigital:</b> No se encontró un formulario oficial legible para este ensayo — <code>Formulario de estratigrafia.pdf</code> es un escaneo sin texto extraíble y no hay planilla de respaldo en el proyecto — por lo que este piloto se construyó directamente sobre la práctica estándar de descripción visual-manual de suelos (ref. ASTM D2488) y el Sistema Unificado de Clasificación de Suelos, USCS (ref. ASTM D2487), adaptando los campos típicos de un log de sondaje/calicata (profundidad, clasificación, descripción, muestreo, nivel freático). A diferencia del resto de los ensayos pilotados, la Estratigrafía es un <b>registro descriptivo</b>, no una medición con un resultado numérico único: no existe aquí un criterio de "cumple / no cumple" como en Cono de Arena o CBR — el control de calidad que aplica este piloto es de <b>consistencia del dato</b> (continuidad del perfil, sin vacíos ni superposiciones entre estratos). Los colores de la columna estratigráfica son una convención visual de QCDigital para diferenciar grava/arena/finos/roca a simple vista, no un estándar gráfico oficial — conviene confirmar con el equipo de suelos si el laboratorio usa una convención de colores/tramas distinta. El flujo de 3 firmas (técnico/revisor/validador) se mantiene igual que en el resto de los pilotos por consistencia del sistema, aunque al no haber un formulario oficial no se pudo confirmar cuántas firmas exige hoy este informe en particular.
+  </div>
+</main>
+
+<script>
+const ROLES = [
+  {key:'tecnico', label:'Técnico de terreno', desc:'Nivel 1 — Captura'},
+  {key:'revisor', label:'Revisor', desc:'Nivel 2 — Filtro de cálculos y datos'},
+  {key:'validador', label:'Validador', desc:'Nivel 3 — Firma oficial'},
+];
+
+const USCS_GRUPOS = [
+  {v:'', t:'— Seleccionar —', color:'#3a4468', tex:'none'},
+  {v:'GW', t:'GW — Grava bien graduada', color:'#C9A66B', tex:'grava'},
+  {v:'GP', t:'GP — Grava mal graduada', color:'#B8935A', tex:'grava'},
+  {v:'GM', t:'GM — Grava limosa', color:'#A67C52', tex:'grava'},
+  {v:'GC', t:'GC — Grava arcillosa', color:'#8B6F47', tex:'grava'},
+  {v:'GC-GM', t:'GC-GM — Grava limo-arcillosa', color:'#977452', tex:'grava'},
+  {v:'SW', t:'SW — Arena bien graduada', color:'#F0D878', tex:'arena'},
+  {v:'SP', t:'SP — Arena mal graduada', color:'#E8C85C', tex:'arena'},
+  {v:'SM', t:'SM — Arena limosa', color:'#DBB84A', tex:'arena'},
+  {v:'SC', t:'SC — Arena arcillosa', color:'#C9A63E', tex:'arena'},
+  {v:'SC-SM', t:'SC-SM — Arena limo-arcillosa', color:'#D2B048', tex:'arena'},
+  {v:'ML', t:'ML — Limo de baja plasticidad', color:'#B8B8B8', tex:'fino'},
+  {v:'CL', t:'CL — Arcilla de baja plasticidad', color:'#9B9B9B', tex:'fino'},
+  {v:'CL-ML', t:'CL-ML — Limo arcilloso', color:'#A6A6A6', tex:'fino'},
+  {v:'OL', t:'OL — Limo orgánico', color:'#7A8B6F', tex:'fino'},
+  {v:'MH', t:'MH — Limo de alta plasticidad', color:'#8C8C99', tex:'fino'},
+  {v:'CH', t:'CH — Arcilla de alta plasticidad', color:'#6B6B78', tex:'fino'},
+  {v:'OH', t:'OH — Arcilla orgánica', color:'#5C6B54', tex:'fino'},
+  {v:'PT', t:'Pt — Turba / suelo orgánico', color:'#4A3B2A', tex:'turba'},
+  {v:'ROCA', t:'Roca', color:'#5A5A5A', tex:'roca'},
+  {v:'RELLENO', t:'Relleno / material antrópico', color:'#D9CBB8', tex:'relleno'},
+];
+function uscsInfo(v){ return USCS_GRUPOS.find(u=>u.v===v) || USCS_GRUPOS[0]; }
+
+let estratoSeq = 0;
+let estratos = []; // {id, desde, hasta, uscs, color, desc, muestra, golpes, obs}
+
+function nuevoEstrato(vals){
+  estratoSeq++;
+  return Object.assign({id:'e'+estratoSeq, desde:'', hasta:'', uscs:'', color:'', desc:'', muestra:'ninguna', golpes:'', obs:''}, vals||{});
+}
+
+function renderEstratos(){
+  const tbody = document.getElementById('tbodyEstratos');
+  tbody.innerHTML = '';
+  estratos.forEach((e, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = e.id;
+    tr.innerHTML = `
+      <td style="text-align:center">${idx+1}</td>
+      <td><input type="number" step="0.01" class="f-desde" value="${e.desde}" style="width:70px"></td>
+      <td><input type="number" step="0.01" class="f-hasta" value="${e.hasta}" style="width:70px"></td>
+      <td><span class="f-espesor">—</span></td>
+      <td>
+        <select class="f-uscs" style="min-width:170px">
+          ${USCS_GRUPOS.map(u=>`<option value="${u.v}" ${u.v===e.uscs?'selected':''}>${u.t}</option>`).join('')}
+        </select>
+      </td>
+      <td><input class="f-color" value="${e.color}" placeholder="ej. café" style="width:80px"></td>
+      <td><textarea class="f-desc" placeholder="Textura, humedad, consistencia/compacidad, plasticidad...">${e.desc}</textarea></td>
+      <td>
+        <select class="f-muestra">
+          <option value="ninguna" ${e.muestra==='ninguna'?'selected':''}>Ninguna</option>
+          <option value="alterada" ${e.muestra==='alterada'?'selected':''}>Alterada</option>
+          <option value="inalterada" ${e.muestra==='inalterada'?'selected':''}>Inalterada</option>
+          <option value="spt" ${e.muestra==='spt'?'selected':''}>SPT</option>
+        </select>
+      </td>
+      <td><input type="number" class="f-golpes" value="${e.golpes}" style="width:60px" ${e.muestra==='spt'?'':'disabled'}></td>
+      <td><input class="f-obs" value="${e.obs}" style="width:110px"></td>
+      <td><button class="btn-icon btn-danger f-del">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  attachEstratoHandlers();
+  calcularTodo();
+}
+
+function attachEstratoHandlers(){
+  document.querySelectorAll('#tbodyEstratos tr').forEach(tr => {
+    const id = tr.dataset.id;
+    const e = estratos.find(x=>x.id===id);
+    const set = (sel, key, isNum) => {
+      const el = tr.querySelector(sel);
+      el.addEventListener('input', () => { e[key] = isNum ? el.value : el.value; markDirty(); calcularTodo(); });
+      el.addEventListener('change', () => { e[key] = el.value; markDirty(); calcularTodo(); });
+    };
+    set('.f-desde','desde',true);
+    set('.f-hasta','hasta',true);
+    set('.f-color','color');
+    set('.f-desc','desc');
+    set('.f-obs','obs');
+    tr.querySelector('.f-uscs').addEventListener('change', (ev) => { e.uscs = ev.target.value; markDirty(); calcularTodo(); });
+    tr.querySelector('.f-muestra').addEventListener('change', (ev) => {
+      e.muestra = ev.target.value;
+      const golpesInput = tr.querySelector('.f-golpes');
+      golpesInput.disabled = e.muestra !== 'spt';
+      if (e.muestra !== 'spt'){ e.golpes=''; golpesInput.value=''; }
+      markDirty(); calcularTodo();
+    });
+    tr.querySelector('.f-golpes').addEventListener('input', (ev) => { e.golpes = ev.target.value; markDirty(); });
+    tr.querySelector('.f-del').addEventListener('click', () => {
+      estratos = estratos.filter(x=>x.id!==id);
+      renderEstratos(); markDirty();
+    });
+  });
+}
+
+document.getElementById('btnAddEstrato').addEventListener('click', () => {
+  let desdeSugerido = 0;
+  if (estratos.length){
+    const ult = estratos[estratos.length-1];
+    const h = parseFloat(ult.hasta);
+    desdeSugerido = isNaN(h) ? '' : h;
+  }
+  estratos.push(nuevoEstrato({desde: desdeSugerido}));
+  renderEstratos(); markDirty();
+});
+
+function calcularTodo(){
+  let profTotalCalc = 0;
+  let discontinuidad = false;
+  let mensajeDiscont = '';
+  document.querySelectorAll('#tbodyEstratos tr').forEach((tr, idx) => {
+    const desde = parseFloat(tr.querySelector('.f-desde').value);
+    const hasta = parseFloat(tr.querySelector('.f-hasta').value);
+    const espSpan = tr.querySelector('.f-espesor');
+    if (!isNaN(desde) && !isNaN(hasta)){
+      const esp = hasta - desde;
+      espSpan.textContent = esp.toFixed(2);
+      if (esp < 0){ espSpan.style.color='var(--red)'; } else { espSpan.style.color=''; }
+    } else {
+      espSpan.textContent = '—';
+    }
+  });
+
+  // continuidad
+  const filas = estratos.map(e => ({desde: parseFloat(e.desde), hasta: parseFloat(e.hasta)}));
+  for (let i=0;i<filas.length;i++){
+    if (isNaN(filas[i].desde) || isNaN(filas[i].hasta)) continue;
+    if (i>0 && !isNaN(filas[i-1].hasta)){
+      const gap = filas[i].desde - filas[i-1].hasta;
+      if (Math.abs(gap) > 0.01){
+        discontinuidad = true;
+        mensajeDiscont = `Revisar estrato ${i} → ${i+1}: ${gap>0 ? 'vacío de '+gap.toFixed(2)+' m' : 'superposición de '+Math.abs(gap).toFixed(2)+' m'}`;
+      }
+    }
+    if (!isNaN(filas[i].hasta)) profTotalCalc = Math.max(profTotalCalc, filas[i].hasta);
+  }
+  const badge = document.getElementById('continuidadBadge');
+  if (!filas.length){
+    badge.className = 'badge warn'; badge.textContent = 'Sin estratos';
+  } else if (discontinuidad){
+    badge.className = 'badge bad'; badge.textContent = mensajeDiscont;
+  } else {
+    badge.className = 'badge ok'; badge.textContent = 'Perfil continuo ✓';
+  }
+
+  const profTotalInput = parseFloat(document.getElementById('g_profundidadTotal').value);
+  const profTotal = !isNaN(profTotalInput) && profTotalInput > 0 ? profTotalInput : profTotalCalc;
+
+  const nfNoDetectado = document.getElementById('g_nfNoDetectado').checked;
+  const nfInput = document.getElementById('g_nivelFreatico');
+  nfInput.disabled = nfNoDetectado;
+  if (nfNoDetectado) nfInput.value = '';
+  const nf = nfNoDetectado ? null : parseFloat(nfInput.value);
+  const hintNf = document.getElementById('hintNf');
+  if (!nfNoDetectado && !isNaN(nf) && profTotal && nf > profTotal){
+    hintNf.textContent = 'Advertencia: el nivel freático supera la profundidad total explorada.';
+    hintNf.className = 'hint warn';
+  } else {
+    hintNf.textContent = '';
+    hintNf.className = 'hint';
+  }
+
+  const nMuestras = estratos.filter(e => e.muestra && e.muestra !== 'ninguna').length;
+
+  document.getElementById('rc_profTotal').textContent = profTotal ? profTotal.toFixed(2)+' m' : '—';
+  document.getElementById('rc_nEstratos').textContent = estratos.length || '—';
+  document.getElementById('rc_nf').textContent = nfNoDetectado ? 'No detectado' : (isNaN(nf) ? '—' : nf.toFixed(2)+' m');
+  document.getElementById('rc_nMuestras').textContent = nMuestras || '0';
+
+  dibujarColumna(profTotal, nfNoDetectado ? null : nf);
+  renderTablaResumen();
+}
+
+document.getElementById('g_profundidadTotal').addEventListener('input', () => { markDirty(); calcularTodo(); });
+document.getElementById('g_nfNoDetectado').addEventListener('change', () => { markDirty(); calcularTodo(); });
+document.getElementById('g_nivelFreatico').addEventListener('input', () => { markDirty(); calcularTodo(); });
+
+function renderTablaResumen(){
+  const wrap = document.getElementById('tablaResumenWrap');
+  if (!estratos.length){ wrap.innerHTML = '<div class="hint">Sin estratos ingresados.</div>'; return; }
+  let html = '<table><thead><tr><th>N°</th><th>Prof. (m)</th><th>Esp. (m)</th><th>USCS</th><th>Descripción</th><th>Muestra</th></tr></thead><tbody>';
+  estratos.forEach((e, idx) => {
+    const desde = parseFloat(e.desde), hasta = parseFloat(e.hasta);
+    const esp = (!isNaN(desde) && !isNaN(hasta)) ? (hasta-desde).toFixed(2) : '—';
+    const prof = (!isNaN(desde) && !isNaN(hasta)) ? `${desde.toFixed(2)}–${hasta.toFixed(2)}` : '—';
+    const info = uscsInfo(e.uscs);
+    const muestraTxt = e.muestra==='ninguna' ? '—' : (e.muestra==='spt' ? `SPT (N=${e.golpes||'-'})` : e.muestra.charAt(0).toUpperCase()+e.muestra.slice(1));
+    html += `<tr><td>${idx+1}</td><td>${prof}</td><td>${esp}</td><td>${e.uscs||'—'}</td><td>${(e.desc||'').slice(0,60)}${(e.desc||'').length>60?'…':''}</td><td>${muestraTxt}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+// --- Textura patterns for the stratigraphic column ---
+function pintarTextura(ctx, x, y, w, h, tex, baseColor){
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+  ctx.fillStyle = baseColor; ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
+  if (tex === 'grava'){
+    for (let yy=y+5; yy<y+h; yy+=9){
+      for (let xx=x+5; xx<x+w; xx+=11){
+        ctx.beginPath(); ctx.arc(xx + (Math.floor((yy-y)/9)%2?4:0), yy, 2.2, 0, Math.PI*2); ctx.stroke();
+      }
+    }
+  } else if (tex === 'arena'){
+    for (let yy=y+4; yy<y+h; yy+=6){
+      for (let xx=x+4; xx<x+w; xx+=6){
+        ctx.beginPath(); ctx.arc(xx, yy, 0.8, 0, Math.PI*2); ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fill();
+      }
+    }
+  } else if (tex === 'fino'){
+    for (let yy=y+5; yy<y+h; yy+=6){
+      ctx.beginPath(); ctx.moveTo(x+2,yy); ctx.lineTo(x+w-2,yy); ctx.stroke();
+    }
+  } else if (tex === 'roca'){
+    for (let yy=y; yy<y+h+w; yy+=8){
+      ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x+ (yy-y), y);
+      ctx.moveTo(x, yy-w); ctx.lineTo(x+w, yy-w+w);
+      ctx.stroke();
+    }
+  } else if (tex === 'relleno'){
+    for (let d=-h; d<w; d+=8){
+      ctx.beginPath(); ctx.moveTo(x+d, y+h); ctx.lineTo(x+d+h, y); ctx.stroke();
+    }
+  } else if (tex === 'turba'){
+    for (let yy=y+5; yy<y+h; yy+=7){
+      ctx.beginPath(); ctx.moveTo(x+3,yy); ctx.lineTo(x+w-3,yy);
+      ctx.moveTo(x+3,yy+2); ctx.lineTo(x+w-3,yy+2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function dibujarColumna(profTotal, nf){
+  const canvas = document.getElementById('columnaCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0c1424'; ctx.fillRect(0,0,W,H);
+
+  const marginTop = 16, marginBottom = 16, rulerW = 34, colX = rulerW+8, colW = W - colX - 46;
+  const usable = H - marginTop - marginBottom;
+  const maxProf = (profTotal && profTotal > 0) ? profTotal : 1;
+
+  const yFor = (depth) => marginTop + (depth/maxProf)*usable;
+
+  // fondo neutro de la columna: donde no hay estrato definido (vacíos/discontinuidades) queda gris, no el navy de fondo
+  ctx.fillStyle = '#5a6070';
+  ctx.fillRect(colX, marginTop, colW, usable);
+
+  // ruler ticks
+  ctx.strokeStyle = '#3a4468'; ctx.fillStyle = '#9aa5c0'; ctx.font = '10px Arial'; ctx.textAlign='right';
+  const step = maxProf <= 5 ? 0.5 : (maxProf <= 12 ? 1 : (maxProf <= 25 ? 2 : 5));
+  for (let d=0; d<=maxProf+0.001; d+=step){
+    const y = yFor(d);
+    ctx.beginPath(); ctx.moveTo(rulerW-4,y); ctx.lineTo(rulerW,y); ctx.stroke();
+    ctx.fillText(d.toFixed(d%1===0?0:1), rulerW-6, y+3);
+  }
+
+  // strata blocks
+  estratos.forEach(e => {
+    const desde = parseFloat(e.desde), hasta = parseFloat(e.hasta);
+    if (isNaN(desde) || isNaN(hasta) || hasta<=desde) return;
+    const y0 = yFor(desde), y1 = yFor(hasta);
+    const info = uscsInfo(e.uscs);
+    pintarTextura(ctx, colX, y0, colW, Math.max(1,y1-y0), info.tex, info.color);
+    ctx.strokeStyle = '#0c1424'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(colX, y0, colW, y1-y0);
+    if (y1-y0 > 12 && e.uscs){
+      ctx.fillStyle = '#111'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
+      ctx.fillText(e.uscs, colX+colW/2, (y0+y1)/2+3);
+    }
+  });
+
+  // outer border
+  ctx.strokeStyle = '#5a6690'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(colX, marginTop, colW, usable);
+
+  // water table
+  if (nf !== null && !isNaN(nf) && nf >= 0 && nf <= maxProf){
+    const y = yFor(nf);
+    ctx.strokeStyle = '#4fc3f7'; ctx.setLineDash([4,3]); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(colX-2,y); ctx.lineTo(colX+colW+14,y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#4fc3f7';
+    ctx.beginPath();
+    ctx.moveTo(colX+colW+6, y-6); ctx.lineTo(colX+colW+16, y-6); ctx.lineTo(colX+colW+11, y+2); ctx.closePath(); ctx.fill();
+    ctx.font='9px Arial'; ctx.textAlign='left'; ctx.fillText('N.F.', colX+colW+4, y+14);
+  }
+}
+
+// --- Firmas ---
+let firmas = {}; // key -> {nombre, rut, imgDataUrl, firmadoAt}
+function initFirmas(){
+  const wrap = document.getElementById('firmasRow');
+  wrap.innerHTML = '';
+  ROLES.forEach((r,i) => {
+    const box = document.createElement('div');
+    box.className = 'firma-box';
+    box.innerHTML = `
+      <h3>${r.label} <span class="rol-tag">${r.desc}</span></h3>
+      <div class="field" style="margin-bottom:6px"><label>Nombre completo</label><input id="firmaNombre_${r.key}"></div>
+      <div class="field" style="margin-bottom:6px"><label>RUT</label><input id="firmaRut_${r.key}"></div>
+      <div class="firma-pad-wrap"><canvas id="firmaPad_${r.key}" width="400" height="110"></canvas></div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="btn-icon" data-limpiar="${r.key}">Limpiar</button>
+        <button class="btn-icon primary" data-firmar="${r.key}" ${i>0?'disabled':''}>Firmar</button>
+      </div>
+      <div class="firma-estado pendiente" id="firmaEstado_${r.key}">Pendiente de firma</div>
+    `;
+    wrap.appendChild(box);
+  });
+  ROLES.forEach(r => setupFirmaPad(r.key));
+  wrap.querySelectorAll('[data-limpiar]').forEach(btn => {
+    btn.addEventListener('click', () => { limpiarPad(btn.dataset.limpiar); });
+  });
+  wrap.querySelectorAll('[data-firmar]').forEach(btn => {
+    btn.addEventListener('click', () => { firmarRol(btn.dataset.firmar); });
+  });
+}
+
+const padCtx = {};
+function setupFirmaPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#0d1526'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  padCtx[key] = {ctx, drawing:false, hasDrawn:false};
+  const getPos = (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+    return {x: cx * (canvas.width/rect.width), y: cy * (canvas.height/rect.height)};
+  };
+  const start = (ev) => { ev.preventDefault(); const p = getPos(ev); padCtx[key].drawing=true; padCtx[key].hasDrawn=true; ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  const move = (ev) => { if(!padCtx[key].drawing) return; ev.preventDefault(); const p = getPos(ev); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+  const end = () => { padCtx[key].drawing=false; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function limpiarPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  padCtx[key].hasDrawn = false;
+}
+
+function firmarRol(key){
+  const nombre = document.getElementById('firmaNombre_'+key).value.trim();
+  const rut = document.getElementById('firmaRut_'+key).value.trim();
+  if (!nombre || !rut){ alert('Completa nombre y RUT antes de firmar.'); return; }
+  if (!padCtx[key].hasDrawn){ alert('Dibuja la firma en el recuadro antes de firmar.'); return; }
+  const canvas = document.getElementById('firmaPad_'+key);
+  const imgDataUrl = canvas.toDataURL('image/png');
+  firmas[key] = {nombre, rut, imgDataUrl, firmadoAt: new Date().toISOString()};
+  const estadoEl = document.getElementById('firmaEstado_'+key);
+  estadoEl.textContent = 'Firmado — ' + fmtFechaHora(firmas[key].firmadoAt);
+  estadoEl.className = 'firma-estado firmado';
+  const idx = ROLES.findIndex(r=>r.key===key);
+  document.getElementById('firmaNombre_'+key).disabled = true;
+  document.getElementById('firmaRut_'+key).disabled = true;
+  document.querySelector(`[data-firmar="${key}"]`).disabled = true;
+  document.querySelector(`[data-limpiar="${key}"]`).disabled = true;
+  if (idx+1 < ROLES.length){
+    const nextBtn = document.querySelector(`[data-firmar="${ROLES[idx+1].key}"]`);
+    if (nextBtn) nextBtn.disabled = false;
+  }
+  markDirty(); persistSavedIndicator();
+}
+
+function fmtFechaHora(iso){
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// --- Descarga de archivos: capacidad "downloads" cuando corre como Artifact publicado,
+// descarga clásica por blob cuando corre como archivo HTML local (o enviado por chat). ---
+async function offerDownload(filename, dataOrBlob){
+  if (window.claude && typeof window.claude.use === 'function'){
+    try {
+      const downloads = await window.claude.use('downloads');
+      if (downloads){
+        try{
+          await downloads.save({filename, data: dataOrBlob});
+          return true;
+        }catch(err){
+          const code = err && err.code;
+          if (code === 'declined'){
+            // el usuario canceló el guardado, no hacer nada
+          } else if (code === 'extension_not_enabled' || code === 'rejected_extension'){
+            alert('Este visor no permite descargar archivos ".' + filename.split('.').pop() + '" directamente. Abre el piloto como archivo HTML (descargado desde el chat) para generar el PDF/JSON sin esta restricción.');
+          } else {
+            alert('No se pudo guardar el archivo: ' + (err && err.message ? err.message : 'error desconocido'));
+          }
+          return false;
+        }
+      }
+    } catch(e) { /* sin soporte de capacidades: sigue al método clásico */ }
+  }
+  const blob = (dataOrBlob instanceof Blob) ? dataOrBlob : new Blob([dataOrBlob], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// --- Guardar / cargar avance ---
+let dirty = false;
+function markDirty(){ dirty = true; const el=document.getElementById('saveStatus'); el.textContent='Cambios sin guardar'; el.className='save-status dirty'; }
+function persistSavedIndicator(msg){
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg || 'Guardado · ' + fmtFechaHora(new Date().toISOString());
+  el.className = 'save-status saved';
+  dirty = false;
+}
+window.addEventListener('beforeunload', (e) => { if (dirty){ e.preventDefault(); e.returnValue=''; } });
+
+function serializarGeneral(){
+  const ids = ['g_boleta','g_muestra','g_tipoExploracion','g_fechaInicio','g_fechaTermino','g_empresa','g_rutEmpresa',
+    'g_obra','g_direccionObra','g_utmEste','g_utmNorte','g_huso','g_cotaTerreno','g_metodo','g_diametro',
+    'g_profundidadTotal','g_nfNoDetectado','g_nivelFreatico','g_responsableTerreno','g_solicitadoPor','g_observaciones'];
+  const out = {};
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    out[id.replace('g_','')] = el.type==='checkbox' ? el.checked : el.value;
+  });
+  return out;
+}
+function restaurarGeneral(g){
+  if (!g) return;
+  Object.keys(g).forEach(k => {
+    const el = document.getElementById('g_'+k);
+    if (!el) return;
+    if (el.type==='checkbox') el.checked = !!g[k]; else el.value = g[k];
+  });
+}
+
+document.getElementById('btnGuardar').addEventListener('click', async () => {
+  const data = {
+    tipo: 'estratigrafia',
+    version: 1,
+    general: serializarGeneral(),
+    estratos: estratos,
+    firmas: firmas,
+    guardadoAt: new Date().toISOString(),
+  };
+  const muestra = document.getElementById('g_muestra').value || 'sinmuestra';
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  const ok = await offerDownload(`Avance_Estratigrafia_${muestra}_${stamp}.json`, JSON.stringify(data,null,2));
+  if (ok) persistSavedIndicator();
+});
+
+document.getElementById('btnCargar').addEventListener('click', () => document.getElementById('fileInputAvance').click());
+document.getElementById('fileInputAvance').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      restaurarGeneral(data.general);
+      estratos = (data.estratos || []).map(e => Object.assign(nuevoEstrato(), e));
+      renderEstratos();
+      firmas = data.firmas || {};
+      initFirmas();
+      Object.keys(firmas).forEach(key => {
+        const f = firmas[key];
+        document.getElementById('firmaNombre_'+key).value = f.nombre;
+        document.getElementById('firmaRut_'+key).value = f.rut;
+        document.getElementById('firmaNombre_'+key).disabled = true;
+        document.getElementById('firmaRut_'+key).disabled = true;
+        const canvas = document.getElementById('firmaPad_'+key);
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+        img.src = f.imgDataUrl;
+        padCtx[key].hasDrawn = true;
+        const estadoEl = document.getElementById('firmaEstado_'+key);
+        estadoEl.textContent = 'Firmado — ' + fmtFechaHora(f.firmadoAt);
+        estadoEl.className = 'firma-estado firmado';
+        const btnFirmar = document.querySelector(`[data-firmar="${key}"]`);
+        if (btnFirmar) btnFirmar.disabled = true;
+        const btnLimpiar = document.querySelector(`[data-limpiar="${key}"]`);
+        if (btnLimpiar) btnLimpiar.disabled = true;
+      });
+      ROLES.forEach((r,idx) => {
+        if (!firmas[r.key] && idx>0){
+          const prevFirmado = !!firmas[ROLES[idx-1].key];
+          const btn = document.querySelector(`[data-firmar="${r.key}"]`);
+          if (btn) btn.disabled = !prevFirmado;
+        }
+      });
+      persistSavedIndicator('Avance cargado · ' + fmtFechaHora(new Date().toISOString()));
+      calcularTodo();
+    }catch(err){
+      alert('No se pudo leer el archivo de avance: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+// --- QR ---
+function dibujarQR(doc, text, x, y, size, moduleColor){
+  const qr = qrcode(0, 'M');
+  qr.addData(text); qr.make();
+  const count = qr.getModuleCount();
+  const pad = size*0.08;
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(x-pad, y-pad, size+pad*2, size+pad*2, 1.2, 1.2, 'F');
+  const cell = size/count;
+  doc.setFillColor(moduleColor[0], moduleColor[1], moduleColor[2]);
+  for (let r=0;r<count;r++){
+    for (let c=0;c<count;c++){
+      if (qr.isDark(r,c)){
+        doc.rect(x+c*cell, y+r*cell, cell+0.01, cell+0.01, 'F');
+      }
+    }
+  }
+}
+
+// --- PDF "Alternativa C" ---
+function generarPDF(soloProvisorio){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const pageW = 216, pageH = 279, margin = 14;
+  const g = serializarGeneral();
+  const muestra = g.muestra || 'S-N';
+  const anio = new Date().getFullYear();
+  const codigo = `EST-${anio}-${muestra}`;
+
+  const nivelesFirmados = ROLES.filter(r => firmas[r.key]).length;
+  const validado = !soloProvisorio && nivelesFirmados === ROLES.length;
+  const estadoTxt = validado ? 'Informe validado' : 'Resultado provisorio';
+  const estadoColor = validado ? [0,184,92] : [255,179,0];
+
+  // Header
+  doc.setFillColor(13,21,38); doc.rect(0,0,pageW,26,'F');
+  doc.setFillColor(0,230,118); doc.roundedRect(margin, 7, 12, 12, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('QC', margin+6, 15, {align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(15);
+  doc.text('QCdigital', margin+18, 13);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('MODULO LABORATORIO', margin+18, 18.5);
+  doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Perfil Estratigrafico - Log de Sondaje / Calicata', pageW-margin, 15, {align:'right'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('Geotecnia / Suelos', pageW-margin, 20, {align:'right'});
+
+  // Status ribbon
+  let y = 30;
+  doc.setFillColor(estadoColor[0],estadoColor[1],estadoColor[2]);
+  doc.roundedRect(margin, y, pageW-margin*2, 14, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(estadoTxt, margin+6, y+9);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Codigo: ' + codigo, margin+70, y+9);
+  dibujarQR(doc, `QCDIGITAL-LAB|${codigo}|${estadoTxt}`, pageW-margin-16, y-1, 16, [13,21,38]);
+  y += 20;
+
+  // Metadata strip
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2);
+  doc.setFontSize(8.5); doc.setTextColor(60,60,60);
+  const metaRow = (label, val, x) => {
+    doc.setFont('helvetica','bold');
+    const labelTxt = label+':';
+    doc.text(labelTxt, x, y);
+    const labelW = doc.getTextWidth(labelTxt);
+    doc.setFont('helvetica','normal');
+    doc.text(String(val||'-'), x+labelW+2, y);
+  };
+  metaRow('Boleta N°', g.boleta, margin);
+  metaRow('Sondaje N°', g.muestra, margin+68);
+  metaRow('Tipo', g.tipoExploracion==='calicata'?'Calicata a mano':(g.tipoExploracion==='sondaje_manual'?'Sondaje manual':'Sondaje mecanico'), margin+138);
+  y += 6;
+  metaRow('Fecha inicio', g.fechaInicio, margin);
+  metaRow('Fecha termino', g.fechaTermino, margin+68);
+  metaRow('Empresa', g.empresa, margin+138);
+  y += 8;
+
+  // Result cards (4)
+  const profTotalTxt = document.getElementById('rc_profTotal').textContent;
+  const nEstratosTxt = document.getElementById('rc_nEstratos').textContent;
+  const nfTxt = document.getElementById('rc_nf').textContent;
+  const nMuestrasTxt = document.getElementById('rc_nMuestras').textContent;
+  const cards = [
+    ['Profundidad total', profTotalTxt],
+    ['N de estratos', nEstratosTxt],
+    ['Nivel freatico', nfTxt],
+    ['Muestras extraidas', nMuestrasTxt],
+  ];
+  const cw = (pageW-margin*2-3*4)/4;
+  cards.forEach((c,i) => {
+    const cx = margin + i*(cw+4);
+    doc.setFillColor(17,26,48); doc.roundedRect(cx, y, cw, 20, 2, 2, 'F');
+    doc.setTextColor(154,165,192); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(c[0], cx+4, y+7);
+    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont('helvetica','bold');
+    doc.text(String(c[1]), cx+4, y+15);
+  });
+  y += 26;
+
+  // Two columns: columna grafica + tabla resumen
+  const colStartY = y;
+  const colWpx = 46, colHpx = 82;
+  doc.setDrawColor(90,102,144); doc.setLineWidth(0.3);
+  drawColumnaPdf(doc, margin, y, colWpx, colHpx, parseFloat(g.profundidadTotal) || null, g.nfNoDetectado ? null : parseFloat(g.nivelFreatico));
+
+  const tableX = margin + colWpx + 6;
+  const tableW = pageW - margin - tableX;
+  doc.setFontSize(8); doc.setTextColor(20,20,20); doc.setFont('helvetica','bold');
+  doc.text('N', tableX, y+4);
+  doc.text('Prof(m)', tableX+9, y+4);
+  doc.text('Esp', tableX+30, y+4);
+  doc.text('USCS', tableX+42, y+4);
+  doc.text('Descripcion', tableX+60, y+4);
+  doc.setDrawColor(150,150,150); doc.line(tableX, y+6, tableX+tableW, y+6);
+  let ty = y+11;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(40,40,40);
+  estratos.forEach((e, idx) => {
+    if (ty > colStartY + colHpx - 2) return;
+    const desde = parseFloat(e.desde), hasta = parseFloat(e.hasta);
+    const esp = (!isNaN(desde)&&!isNaN(hasta)) ? (hasta-desde).toFixed(2) : '-';
+    const prof = (!isNaN(desde)&&!isNaN(hasta)) ? `${desde.toFixed(1)}-${hasta.toFixed(1)}` : '-';
+    doc.text(String(idx+1), tableX, ty);
+    doc.text(prof, tableX+9, ty);
+    doc.text(esp, tableX+30, ty);
+    doc.text(e.uscs||'-', tableX+42, ty);
+    const descLines = doc.splitTextToSize((e.desc||'-'), tableW-60);
+    doc.text(descLines[0]||'-', tableX+60, ty);
+    ty += 5.2;
+  });
+  y = colStartY + colHpx + 8;
+
+  // General info
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2); doc.line(margin, y, pageW-margin, y); y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Informacion general', margin, y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  const obraLines = doc.splitTextToSize('Obra / Proyecto: ' + (g.obra||'-'), pageW-margin*2);
+  doc.text(obraLines, margin, y); y += obraLines.length*4.5;
+  doc.text('Ubicacion: ' + (g.direccionObra||'-'), margin, y); y+=5;
+  doc.text(`Coordenadas UTM: ${g.utmEste||'-'} / ${g.utmNorte||'-'}  (${g.huso||'-'})`, margin, y); y+=5;
+  doc.text(`Cota terreno: ${g.cotaTerreno||'-'} m s.n.m.   Metodo: ${g.metodo||'-'}`, margin, y); y+=5;
+  doc.text(`Responsable de terreno: ${g.responsableTerreno||'-'}   Solicitado por: ${g.solicitadoPor||'-'}`, margin, y); y+=5;
+  if (g.observaciones){
+    const obsLines = doc.splitTextToSize('Observaciones: ' + g.observaciones, pageW-margin*2);
+    doc.text(obsLines, margin, y); y += obsLines.length*4.5;
+  }
+  y += 4;
+
+  // Signatures row
+  doc.setDrawColor(42,54,84); doc.line(margin, y, pageW-margin, y); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Firmas', margin, y); y+=5;
+  const fw = (pageW-margin*2-2*6)/3;
+  ROLES.forEach((r,i) => {
+    const fx = margin + i*(fw+6);
+    doc.setDrawColor(180,180,180); doc.rect(fx, y, fw, 28);
+    const f = firmas[r.key];
+    if (f && f.imgDataUrl){
+      try{ doc.addImage(f.imgDataUrl, 'PNG', fx+3, y+2, fw-6, 14); }catch(e){}
+      doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0);
+      doc.text(f.nombre, fx+3, y+20);
+      doc.setFont('helvetica','normal'); doc.text('RUT ' + f.rut, fx+3, y+24);
+      doc.setFontSize(6.5); doc.setTextColor(100,100,100);
+      doc.text(`N° ${codigo}-${r.key.toUpperCase()}`, fx+3, y+27.5);
+    } else {
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Pendiente de firma', fx+fw/2, y+14, {align:'center'});
+    }
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(120,120,120);
+    doc.text(r.label, fx+3, y+ (f? 0 : -2) );
+  });
+  y += 34;
+
+  // Footer
+  doc.setFontSize(7); doc.setTextColor(154,165,192);
+  doc.text('QCdigital Laboratorio · Documento generado automaticamente · ' + fmtFechaHora(new Date().toISOString()), margin, pageH-10);
+  doc.text('Codigo de verificacion: ' + codigo, pageW-margin, pageH-10, {align:'right'});
+
+  const fname = `Informe_${codigo}_${validado?'validado':'provisorio'}.pdf`;
+  offerDownload(fname, doc.output('blob'));
+}
+
+function drawColumnaPdf(doc, x, y, w, h, profTotal, nf){
+  const maxProf = (profTotal && profTotal>0) ? profTotal : (estratos.length ? Math.max(...estratos.map(e=>parseFloat(e.hasta)||0)) : 1) || 1;
+  const yFor = (d) => y + (d/maxProf)*h;
+  // fondo neutro: donde no hay estrato definido (vacíos/discontinuidades) queda gris, no negro/navy
+  doc.setFillColor(214,214,214); doc.rect(x, y, w, h, 'F');
+  estratos.forEach(e => {
+    const desde = parseFloat(e.desde), hasta = parseFloat(e.hasta);
+    if (isNaN(desde) || isNaN(hasta) || hasta<=desde) return;
+    const y0 = yFor(desde), y1 = yFor(hasta);
+    const info = uscsInfo(e.uscs);
+    const rgb = hexToRgb(info.color);
+    doc.setFillColor(rgb[0],rgb[1],rgb[2]);
+    doc.rect(x, y0, w, Math.max(0.3,y1-y0), 'F');
+    doc.setDrawColor(12,20,36); doc.setLineWidth(0.15);
+    doc.rect(x, y0, w, Math.max(0.3,y1-y0));
+    if (y1-y0 > 4 && e.uscs){
+      doc.setFontSize(6); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+      doc.text(e.uscs, x+w/2, (y0+y1)/2+1, {align:'center'});
+    }
+  });
+  doc.setDrawColor(90,102,144); doc.setLineWidth(0.3); doc.rect(x,y,w,h);
+  if (nf !== null && !isNaN(nf) && nf>=0 && nf<=maxProf){
+    const ny = yFor(nf);
+    doc.setDrawColor(79,195,247); doc.setLineDashPattern([1,0.8],0); doc.setLineWidth(0.4);
+    doc.line(x, ny, x+w, ny);
+    doc.setLineDashPattern([],0);
+  }
+}
+function hexToRgb(hex){
+  const h = hex.replace('#','');
+  return [parseInt(h.substring(0,2),16), parseInt(h.substring(2,4),16), parseInt(h.substring(4,6),16)];
+}
+
+document.getElementById('btnPdfProvisorio').addEventListener('click', () => generarPDF(true));
+document.getElementById('btnPdfValidado').addEventListener('click', () => generarPDF(false));
+
+// init
+initFirmas();
+renderEstratos();
+calcularTodo();
+</script>
+</body>
+</html>

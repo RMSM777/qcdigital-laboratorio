@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCDigital Laboratorio — Resistencia a Corta Edad (Hormigón Proyectado)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0d1526;
+    --navy2:#141f38;
+    --navy3:#1b2947;
+    --green:#00e676;
+    --green-dark:#00b85c;
+    --amber:#ffb300;
+    --red:#ff5252;
+    --border:#2a3654;
+    --text:#e8ecf5;
+    --text-dim:#9aa5c0;
+    --card-bg:#111a30;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI', Arial, sans-serif; background:#0a1120; color:var(--text);
+    padding-bottom:60px;
+  }
+  header.app-header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);
+    padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:2px solid var(--green); position:sticky; top:0; z-index:50;
+  }
+  .wordmark{display:flex; align-items:center; gap:12px;}
+  .wordmark .logo{
+    width:38px; height:38px; border-radius:8px;
+    background:linear-gradient(135deg,var(--green) 0%, var(--green-dark) 100%);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy); font-size:18px;
+  }
+  .wordmark .brand{font-size:20px; font-weight:800; letter-spacing:.5px;}
+  .wordmark .brand span{color:var(--green);}
+  .tag{font-size:11px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; margin-top:2px;}
+  .save-bar{display:flex; align-items:center; gap:10px;}
+  .save-status{font-size:12px; color:var(--text-dim);}
+  .save-status.dirty{color:var(--amber);}
+  .save-status.saved{color:var(--green);}
+  button{
+    cursor:pointer; border:1px solid var(--border); background:var(--navy2); color:var(--text);
+    padding:9px 16px; border-radius:7px; font-size:13px; font-weight:600; transition:.15s;
+  }
+  button:hover{border-color:var(--green);}
+  button.primary{background:var(--green); color:var(--navy); border-color:var(--green);}
+  button.primary:hover{background:var(--green-dark);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  main{max-width:1180px; margin:0 auto; padding:24px 20px;}
+  h1{font-size:22px; margin:0 0 4px;}
+  .subtitle{color:var(--text-dim); font-size:13px; margin-bottom:22px;}
+  .card{
+    background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h2{font-size:15px; margin:0 0 16px; color:var(--green); display:flex; align-items:center; gap:8px;}
+  .card h2 .num{
+    width:24px; height:24px; border-radius:50%; background:var(--navy3); color:var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--green);
+  }
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12px; color:var(--text-dim);}
+  .field input, .field select, .field textarea{
+    background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:6px; font-size:13px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--green);}
+  .hint{font-size:11px; color:var(--text-dim); margin-top:2px;}
+  .hint.warn{color:var(--amber);}
+  .btn-icon{padding:5px 9px; font-size:12px;}
+  .btn-danger{border-color:var(--red); color:var(--red);}
+  .btn-danger:hover{background:rgba(255,82,82,.12);}
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;}
+  .badge.ok{background:rgba(0,230,118,.15); color:var(--green);}
+  .badge.warn{background:rgba(255,179,0,.15); color:var(--amber);}
+  .badge.bad{background:rgba(255,82,82,.15); color:var(--red);}
+  .badge.neutral{background:rgba(154,165,192,.15); color:var(--text-dim);}
+  /* Variante para textos largos (frases, no etiquetas cortas): permite que el badge envuelva a varias
+     lineas en vez de desbordar el ancho de la tarjeta de resultado. */
+  .badge.wrap{white-space:normal; display:block; margin-bottom:4px; text-align:left;}
+  .badge.wrap:last-child{margin-bottom:0;}
+  .toolbar{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center;}
+  .results-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;}
+  .result-card{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .result-card .label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .result-card .value{font-size:20px; font-weight:800; margin-top:4px;}
+  .chart-wrap{background:#0c1424; border:1px solid var(--border); border-radius:10px; padding:14px; height:280px;}
+  .chart-caption{font-size:11px; color:var(--text-dim); margin-top:8px; text-align:center;}
+  .firmas-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;}
+  .firma-box{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px;}
+  .firma-box h3{font-size:13px; margin:0 0 4px; display:flex; justify-content:space-between; align-items:center;}
+  .firma-box .rol-tag{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .firma-pad-wrap canvas{width:100%; height:110px; background:#fff; border-radius:6px; cursor:crosshair; touch-action:none;}
+  .firma-estado{font-size:12px; margin-top:8px;}
+  .firma-estado.pendiente{color:var(--text-dim);}
+  .firma-estado.firmado{color:var(--green); font-weight:600;}
+  .footer-note{font-size:11px; color:var(--text-dim); line-height:1.6; margin-top:26px; padding:16px 18px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px;}
+  .footer-note b{color:var(--text);}
+  .det-card{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:14px;}
+  .det-card .det-head{display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;}
+  .det-card .det-head .det-num{
+    width:24px; height:24px; border-radius:50%; background:var(--navy3); color:var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--green); flex-shrink:0;
+  }
+  .det-card .field{gap:4px;}
+  .det-fields{display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;}
+</style>
+</head>
+<body><div id="qcdLabBar" style="position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;background:#0d1526;color:#fff;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:9px 14px;padding-top:calc(9px + env(safe-area-inset-top));border-bottom:2px solid #f5851f"><a href="../index.html#ensayos" style="color:#fff;text-decoration:none">&#8249; Laboratorio</a><span style="flex:1;text-align:center;opacity:.8;font-weight:500">Resistencia a compresión a corta edad (aguja de penetración </span><a href="../documento.html?c=PTE-HP-02" style="color:#f5851f;text-decoration:none">Ver PTE</a></div>
+
+<header class="app-header">
+  <div class="wordmark">
+    <div class="logo">QC</div>
+    <div>
+      <div class="brand">QC<span>digital</span></div>
+      <div class="tag">Módulo Laboratorio</div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <span id="saveStatus" class="save-status">Sin cambios</span>
+    <button id="btnCargar">Cargar avance</button>
+    <input type="file" id="fileInputAvance" accept=".json" style="display:none">
+    <button id="btnGuardar" class="primary">Guardar avance</button>
+  </div>
+</header>
+
+<main>
+  <h1>Resistencia a Compresión a Corta Edad — Hormigón Proyectado</h1>
+  <div class="subtitle">Hormigones · UNE-EN 14488-2 — Determinación de la resistencia a compresión del hormigón proyectado a corta edad · Piloto QCDigital</div>
+
+  <div class="card">
+    <h2><span class="num">1</span> Información general</h2>
+    <div class="grid">
+      <div class="field"><label>N° Boleta</label><input id="g_boleta"></div>
+      <div class="field"><label>N° Muestra</label><input id="g_muestra"></div>
+      <div class="field"><label>Fecha de ensayo</label><input type="date" id="g_fecha"></div>
+      <div class="field"><label>Hora de proyección</label><input type="time" id="g_horaProyeccion"></div>
+      <div class="field"><label>Edad del hormigón al ensayar (horas)</label><input type="number" step="0.1" id="g_edadHormigon"></div>
+      <div class="field"><label>Empresa solicitante</label><input id="g_empresa"></div>
+      <div class="field"><label>RUT empresa</label><input id="g_rutEmpresa"></div>
+      <div class="field" style="grid-column:span 2"><label>Obra / Proyecto</label><input id="g_obra"></div>
+      <div class="field"><label>Sector / Tramo evaluado</label><input id="g_elemento" placeholder="ej. Frente de avance, progresiva 80 m"></div>
+      <div class="field">
+        <label>Método de ensayo</label>
+        <select id="g_metodo">
+          <option value="aguja">Método A — Penetrómetro de aguja</option>
+          <option value="clavo">Método B — Hincado de clavo (pistola Hilti)</option>
+        </select>
+      </div>
+      <div class="field"><label>Ensayo realizado por</label><input id="g_responsable"></div>
+      <div class="field"><label>Solicitado por</label><input id="g_solicitadoPor"></div>
+    </div>
+    <div class="hint" id="hintMetodo"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Lecturas / disparos</h2>
+    <div id="detsWrap"></div>
+    <div class="toolbar">
+      <button id="btnAddDet">+ Agregar lectura (máx. 12)</button>
+    </div>
+    <div class="hint" id="hintCantidad"></div>
+    <div class="hint">Ambos métodos estiman la resistencia a partir de una <b>curva de conversión suministrada por el fabricante del equipo</b> (no publicada en ninguna norma ni fuente disponible en este proyecto) — el laboratorio ingresa aquí el valor de resistencia ya obtenido con su propio penetrómetro/pistola Hilti y curva de calibración, no una fórmula calculada por este piloto. Ver nota completa al pie del formulario.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> Exigencia del proyecto (opcional)</h2>
+    <div class="grid">
+      <div class="field"><label>Resistencia mínima requerida a esta edad (MPa)</label><input type="number" step="0.1" id="g_exigMin"></div>
+    </div>
+    <div class="hint">Umbral definido por el proyecto (ej. resistencia mínima de reingreso a la excavación) — no proviene de UNE-EN 14488-2, que no fija tolerancias de aceptación propias. Dejar en blanco si no aplica.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> Resultados</h2>
+    <div class="results-grid">
+      <div class="result-card"><div class="label">Resistencia promedio</div><div class="value" id="rc_promedio">—</div></div>
+      <div class="result-card"><div class="label">Rango (mín–máx)</div><div class="value" id="rc_rango" style="font-size:15px">—</div></div>
+      <div class="result-card"><div class="label">Lecturas / clavos válidos</div><div class="value" id="rc_validos" style="font-size:14px">—</div></div>
+      <div class="result-card"><div class="label">Cumple exigencia de proyecto</div><div class="value" id="rc_cumple" style="font-size:14px">—</div></div>
+    </div>
+    <div style="margin-top:18px">
+      <div class="chart-wrap"><canvas id="chartResistencia"></canvas></div>
+      <div class="chart-caption">Resistencia estimada por lectura/clavo (MPa) — línea punteada ámbar marca la exigencia de proyecto, si se especificó. Barras ámbar: fuera del rango normado de aplicabilidad del método.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span> Observaciones generales</h2>
+    <div class="field"><textarea id="g_observaciones" rows="3" style="width:100%"></textarea></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span> Firmas</h2>
+    <div class="firmas-row" id="firmasRow"></div>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnPdfProvisorio">Generar informe PDF (provisorio)</button>
+    <button id="btnPdfValidado" class="primary">Generar informe PDF</button>
+  </div>
+
+  <div class="footer-note">
+    <b>Notas del piloto QCDigital:</b> tercer piloto del cluster de <b>hormigón proyectado (shotcrete)</b> y, a diferencia de Contenido en Fibras y Espesor sobre Sustrato, este piloto <b>no calcula la resistencia</b> — es, por diseño, un <b>validador de procedimiento</b>, no un motor de cálculo. La norma base <b>UNE-EN 14488-2</b> se confirmó sin texto extraíble en el proyecto; según la Guía Chilena del Hormigón Proyectado - Shotcrete (ambos volúmenes, texto idéntico), ambos métodos que define la norma —<b>Método A, penetrómetro de aguja</b> (aguja de 3 ± 0,1 mm de diámetro, punta a 60 ± 5°, penetración de 15 ± 2 mm, mínimo 10 lecturas, rango de aplicación aproximado 0,2 a 1,2 MPa) y <b>Método B, hincado de clavo con pistola Hilti DX450</b> (profundidad de penetración mínima 20 mm, mínimo 10 clavos disparados con al menos 8 válidos, distancia entre clavos ≥80 mm, rango de aplicación aproximado 3 a 16 MPa según el texto de la norma citado — en la práctica el equipo Hilti puede llegar a 18 MPa)— obtienen su resultado final "a partir de una curva de conversión, la que es suministrada por el fabricante del equipo de ensayo". Esa curva es propia de cada equipo/fabricante y no está publicada en ninguna fuente disponible en este proyecto, por lo que no puede reconstruirse aquí. El piloto captura el valor de resistencia que el laboratorio ya obtuvo con su propio equipo y curva, y concentra su "motor" en validar lo que sí es verificable: cantidad mínima de lecturas/clavos válidos, profundidad mínima del clavo (Método B), y si el promedio resultante cae dentro del rango normado de aplicabilidad del método elegido. La distancia mínima entre clavos (≥80 mm) queda como recordatorio informativo, no validable automáticamente porque el piloto no captura coordenadas de cada disparo. Para resistencias por sobre aproximadamente 10 MPa (o pasadas las 24 horas), corresponde extracción y ensayo de testigos según <b>NCh1171</b> — norma que sigue bloqueada en este proyecto por falta de texto legible (ver Pendiente). Se recomienda que el laboratorio confirme contra su propio equipo y curva de calibración que los rangos normados y mínimos de lecturas aquí aplicados coinciden con su práctica habitual.
+  </div>
+</main>
+
+<script>
+const ROLES = [
+  {key:'tecnico', label:'Técnico de terreno', desc:'Nivel 1 — Captura'},
+  {key:'revisor', label:'Revisor', desc:'Nivel 2 — Filtro de cálculos y datos'},
+  {key:'validador', label:'Validador', desc:'Nivel 3 — Firma oficial'},
+];
+
+// Rangos normados de aplicabilidad por metodo (segun el texto citado en la Guia Chilena, ambos
+// volumenes: "0.2 MPa a 1,2 MPa y de 3 Mpa a 16 MPa con dos metodos diferentes, bajo la norma
+// EN 14488-2"). Solo se usan para marcar informativamente lecturas fuera de rango, no para
+// invalidarlas -- el piloto no calcula resistencia, solo valida procedimiento.
+const RANGOS = { aguja: {min:0.2, max:1.2}, clavo: {min:3, max:16} };
+const MIN_LECTURAS = { aguja: 10, clavo: 8 }; // clavo: minimo de VALIDOS de al menos 10 disparados
+
+// Listener delegado generico para todos los campos "g_*" -- sin esto, editarlos solos no dispara
+// calcularTodo() ni markDirty() (bug encontrado y corregido en pilotos anteriores; se incluye
+// desde el arranque en este piloto).
+document.querySelectorAll('main input, main select, main textarea').forEach(el => {
+  if (el.id && el.id.startsWith('g_')){
+    el.addEventListener('input', () => { markDirty(); calcularTodo(); });
+    el.addEventListener('change', () => { markDirty(); calcularTodo(); });
+  }
+});
+// El metodo cambia que campos se capturan por lectura (fuerza de aguja vs. profundidad/extraccion
+// del clavo) -- necesita re-renderizar las tarjetas, no solo recalcular.
+document.getElementById('g_metodo').addEventListener('change', () => { renderDeterminaciones(); });
+
+// --- Lecturas / disparos: hasta 12 ---
+let detSeq = 0;
+let determinaciones = [];
+function nuevaDeterminacion(vals){
+  detSeq++;
+  return Object.assign({id:'d'+detSeq, hora:'', fuerza:'', profundidad:'', extraccion:'', resistenciaMPa:''}, vals||{});
+}
+
+function renderDeterminaciones(){
+  const metodo = document.getElementById('g_metodo').value;
+  const wrap = document.getElementById('detsWrap');
+  wrap.innerHTML = '';
+  determinaciones.forEach((d, idx) => {
+    const box = document.createElement('div');
+    box.className = 'det-card';
+    box.dataset.id = d.id;
+    const camposMetodo = metodo === 'clavo' ? `
+        <div class="field" style="width:150px"><label>Profundidad clavo (mm)</label><input type="number" step="1" class="f-profundidad"></div>
+        <div class="field" style="width:150px"><label>Fuerza extracción (kN)</label><input type="number" step="0.1" class="f-extraccion"></div>` : `
+        <div class="field" style="width:150px"><label>Fuerza medida (N)</label><input type="number" step="1" class="f-fuerza"></div>`;
+    box.innerHTML = `
+      <div class="det-head">
+        <span class="det-num">${idx+1}</span>
+        <div class="field" style="width:110px"><label>Hora</label><input type="time" class="f-hora" style="width:100px"></div>
+        <button class="btn-icon btn-danger f-delDet" style="margin-left:auto">✕ Quitar</button>
+      </div>
+      <div class="det-fields">
+        ${camposMetodo}
+        <div class="field" style="width:170px"><label>Resistencia estimada (MPa)</label><input type="number" step="0.05" class="f-resistencia"></div>
+      </div>
+      <div class="det-result"></div>
+    `;
+    wrap.appendChild(box);
+    box.querySelector('.f-hora').value = d.hora;
+    if (metodo === 'clavo'){
+      box.querySelector('.f-profundidad').value = d.profundidad;
+      box.querySelector('.f-extraccion').value = d.extraccion;
+    } else {
+      box.querySelector('.f-fuerza').value = d.fuerza;
+    }
+    box.querySelector('.f-resistencia').value = d.resistenciaMPa;
+
+    box.querySelector('.f-hora').addEventListener('input', (e) => { d.hora = e.target.value; markDirty(); calcularTodo(); });
+    const bind = (sel, key) => { const el = box.querySelector(sel); if(!el) return; el.addEventListener('input', () => { d[key]=el.value; markDirty(); calcularTodo(); }); };
+    bind('.f-profundidad','profundidad'); bind('.f-extraccion','extraccion'); bind('.f-fuerza','fuerza'); bind('.f-resistencia','resistenciaMPa');
+    box.querySelector('.f-delDet').addEventListener('click', () => {
+      determinaciones = determinaciones.filter(x=>x.id!==d.id);
+      if (!determinaciones.length) determinaciones.push(nuevaDeterminacion());
+      renderDeterminaciones(); markDirty();
+    });
+  });
+  calcularTodo();
+}
+
+document.getElementById('btnAddDet').addEventListener('click', () => {
+  if (determinaciones.length >= 12){ alert('Máximo 12 lecturas/clavos por ensayo.'); return; }
+  determinaciones.push(nuevaDeterminacion()); renderDeterminaciones(); markDirty();
+});
+
+// Calcula la validez de una lectura -- NO calcula resistencia (ver nota del footer): el valor MPa
+// es una entrada manual del laboratorio, ya obtenido con su propio equipo y curva de conversion.
+// Metodo A (aguja): valida si tiene un valor de resistencia. Metodo B (clavo): valida ademas que la
+// profundidad de penetracion sea >=20mm (minimo normado citado en la Guia Chilena).
+function calcularDeterminacion(d, metodo){
+  const resistenciaMPa = parseFloat(d.resistenciaMPa);
+  const tieneResistencia = !isNaN(resistenciaMPa);
+  if (metodo === 'clavo'){
+    const profundidad = parseFloat(d.profundidad);
+    const profundidadOk = !isNaN(profundidad) && profundidad >= 20;
+    return { resistenciaMPa: tieneResistencia ? resistenciaMPa : null, profundidad: isNaN(profundidad) ? null : profundidad, valido: tieneResistencia && profundidadOk, profundidadOk: isNaN(profundidad) ? null : profundidadOk };
+  }
+  return { resistenciaMPa: tieneResistencia ? resistenciaMPa : null, profundidad: null, valido: tieneResistencia, profundidadOk: null };
+}
+
+const exigenciaLinesPlugin = {
+  id: 'exigenciaLines',
+  afterDatasetsDraw(chart, args, opts){
+    if (!opts) return;
+    const {ctx, chartArea, scales} = chart;
+    if (!chartArea || !scales.y) return;
+    ctx.save();
+    ctx.strokeStyle = '#ffb300';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    [opts.min, opts.max].forEach(v => {
+      if (v===null || v===undefined || isNaN(v)) return;
+      const y = scales.y.getPixelForValue(v);
+      if (y < chartArea.top || y > chartArea.bottom) return;
+      ctx.beginPath();
+      ctx.moveTo(chartArea.left, y);
+      ctx.lineTo(chartArea.right, y);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined') Chart.register(exigenciaLinesPlugin);
+
+let chart = null;
+function calcularTodo(){
+  const metodo = document.getElementById('g_metodo').value;
+  const hintMetodo = document.getElementById('hintMetodo');
+  if (metodo === 'clavo'){
+    hintMetodo.innerHTML = 'Método B: se dispara con pistola Hilti DX450, mínimo 10 clavos con al menos 8 válidos (profundidad de penetración ≥20 mm), separados al menos 80 mm entre sí. Rango de aplicación aproximado: 3 a 16 MPa (en la práctica, hasta 18 MPa).';
+  } else {
+    hintMetodo.innerHTML = 'Método A: aguja de 3 ± 0,1 mm de diámetro, penetración de 15 ± 2 mm, mínimo 10 lecturas. Rango de aplicación aproximado: 0,2 a 1,2 MPa.';
+  }
+
+  const filas = [];
+  document.querySelectorAll('.det-card').forEach(box => {
+    const id = box.dataset.id;
+    const d = determinaciones.find(x=>x.id===id);
+    if (!d) return;
+    const r = calcularDeterminacion(d, metodo);
+    filas.push({d, r});
+
+    const resEl = box.querySelector('.det-result');
+    const partes = [];
+    if (metodo === 'clavo' && r.profundidad !== null && !r.profundidadOk) partes.push('<span class="badge warn">Profundidad bajo el mínimo normado (20 mm)</span>');
+    if (r.resistenciaMPa === null) partes.push('<span class="badge neutral">Falta resistencia</span>');
+    else if (r.valido) partes.push('<span class="badge ok">Válido</span>');
+    resEl.innerHTML = partes.join(' ');
+  });
+
+  const validas = filas.filter(f => f.r.valido);
+  const n = validas.length;
+  const totalCapturadas = filas.filter(f => f.r.resistenciaMPa !== null).length;
+  const valores = validas.map(f => f.r.resistenciaMPa);
+  const promedio = n ? Math.round((valores.reduce((s,v)=>s+v,0)/n) * 100) / 100 : null;
+  const minV = n ? Math.min(...valores) : null;
+  const maxV = n ? Math.max(...valores) : null;
+
+  document.getElementById('rc_promedio').textContent = promedio !== null ? promedio + ' MPa' : '—';
+  document.getElementById('rc_rango').textContent = (minV !== null && maxV !== null) ? `${minV} – ${maxV} MPa` : '—';
+  document.getElementById('rc_validos').textContent = `${n} de ${filas.length}`;
+
+  const exigMinRaw = parseFloat(document.getElementById('g_exigMin').value);
+  const hayExig = !isNaN(exigMinRaw);
+  const cumpleEl = document.getElementById('rc_cumple');
+  if (promedio === null){
+    cumpleEl.innerHTML = '<span class="badge neutral">Sin datos válidos</span>';
+  } else if (!hayExig){
+    cumpleEl.innerHTML = '<span class="badge neutral">Sin exigencia especificada</span>';
+  } else if (promedio >= exigMinRaw){
+    cumpleEl.innerHTML = `<span class="badge ok">Cumple (≥ ${exigMinRaw} MPa)</span>`;
+  } else {
+    cumpleEl.innerHTML = `<span class="badge bad">No cumple (< ${exigMinRaw} MPa)</span>`;
+  }
+
+  // Avisos de procedimiento -- cantidad minima normada segun metodo, y rango de aplicabilidad
+  const min = MIN_LECTURAS[metodo];
+  const hintCantidad = document.getElementById('hintCantidad');
+  const avisos = [];
+  if (metodo === 'aguja' && n < min && filas.length){
+    avisos.push(`${n} lectura(s) válida(s) — el método A exige un mínimo de ${min} lecturas.`);
+  }
+  if (metodo === 'clavo' && filas.length){
+    if (filas.length < 10) avisos.push(`Se dispararon ${filas.length} clavo(s) — se recomienda disparar al menos 10.`);
+    if (n < min) avisos.push(`${n} clavo(s) válido(s) — el método B exige un mínimo de ${min} clavos válidos (profundidad ≥20 mm).`);
+  }
+  const rango = RANGOS[metodo];
+  if (promedio !== null && (promedio < rango.min || promedio > rango.max)){
+    avisos.push(`El promedio (${promedio} MPa) queda fuera del rango normado de aplicabilidad de este método (${rango.min}–${rango.max} MPa) — considerar el otro método o, sobre ~10 MPa, extracción de testigos según NCh1171.`);
+  }
+  hintCantidad.innerHTML = avisos.length ? avisos.join(' ') : (filas.length ? 'Cantidad y rango dentro de lo esperado para el método seleccionado.' : '');
+  hintCantidad.className = avisos.length ? 'hint warn' : 'hint';
+
+  dibujarChart(filas, hayExig ? exigMinRaw : null, rango);
+}
+
+function dibujarChart(filas, exigMin, rango){
+  const ctx = document.getElementById('chartResistencia').getContext('2d');
+  const labels = filas.map((f,i) => 'L'+(i+1));
+  const data = filas.map(f => f.r.resistenciaMPa !== null ? f.r.resistenciaMPa : 0);
+  const colors = filas.map(f => {
+    if (f.r.resistenciaMPa === null) return '#5a6690';
+    if (exigMin !== null && f.r.resistenciaMPa < exigMin) return '#ff5252';
+    if (f.r.resistenciaMPa < rango.min || f.r.resistenciaMPa > rango.max) return '#ffb300';
+    return '#00e676';
+  });
+  if (chart) chart.destroy();
+  const datasets = [{ label:'Resistencia estimada (MPa)', data, backgroundColor: colors, borderRadius:4 }];
+  const valoresEje = data.slice();
+  if (exigMin !== null && !isNaN(exigMin)) valoresEje.push(exigMin);
+  valoresEje.push(rango.max);
+  // .toPrecision+parseFloat evita ruido de coma flotante en el limite del eje (ver bug documentado
+  // en Densidad Maxima y Minima), que Chart.js dibujaria tal cual en el tick superior del grafico.
+  const maxEje = valoresEje.length ? parseFloat((Math.max(...valoresEje) * 1.2).toPrecision(6)) : 20;
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display:false }, exigenciaLines: { min: exigMin, max: null } },
+      scales: {
+        x: { ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' } },
+        y: { min:0, max:maxEje, ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' }, title:{display:true,text:'MPa',color:'#9aa5c0'} }
+      }
+    }
+  });
+}
+
+// --- Firmas ---
+let firmas = {};
+function initFirmas(){
+  const wrap = document.getElementById('firmasRow');
+  wrap.innerHTML = '';
+  ROLES.forEach((r,i) => {
+    const box = document.createElement('div');
+    box.className = 'firma-box';
+    box.innerHTML = `
+      <h3>${r.label} <span class="rol-tag">${r.desc}</span></h3>
+      <div class="field" style="margin-bottom:6px"><label>Nombre completo</label><input id="firmaNombre_${r.key}"></div>
+      <div class="field" style="margin-bottom:6px"><label>RUT</label><input id="firmaRut_${r.key}"></div>
+      <div class="firma-pad-wrap"><canvas id="firmaPad_${r.key}" width="400" height="110"></canvas></div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="btn-icon" data-limpiar="${r.key}">Limpiar</button>
+        <button class="btn-icon primary" data-firmar="${r.key}" ${i>0?'disabled':''}>Firmar</button>
+      </div>
+      <div class="firma-estado pendiente" id="firmaEstado_${r.key}">Pendiente de firma</div>
+    `;
+    wrap.appendChild(box);
+  });
+  ROLES.forEach(r => setupFirmaPad(r.key));
+  wrap.querySelectorAll('[data-limpiar]').forEach(btn => btn.addEventListener('click', () => limpiarPad(btn.dataset.limpiar)));
+  wrap.querySelectorAll('[data-firmar]').forEach(btn => btn.addEventListener('click', () => firmarRol(btn.dataset.firmar)));
+}
+
+const padCtx = {};
+function setupFirmaPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#0d1526'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  padCtx[key] = {ctx, drawing:false, hasDrawn:false};
+  const getPos = (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+    return {x: cx * (canvas.width/rect.width), y: cy * (canvas.height/rect.height)};
+  };
+  const start = (ev) => { ev.preventDefault(); const p = getPos(ev); padCtx[key].drawing=true; padCtx[key].hasDrawn=true; ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  const move = (ev) => { if(!padCtx[key].drawing) return; ev.preventDefault(); const p = getPos(ev); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+  const end = () => { padCtx[key].drawing=false; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function limpiarPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  padCtx[key].hasDrawn = false;
+}
+
+function firmarRol(key){
+  const nombre = document.getElementById('firmaNombre_'+key).value.trim();
+  const rut = document.getElementById('firmaRut_'+key).value.trim();
+  if (!nombre || !rut){ alert('Completa nombre y RUT antes de firmar.'); return; }
+  if (!padCtx[key].hasDrawn){ alert('Dibuja la firma en el recuadro antes de firmar.'); return; }
+  const canvas = document.getElementById('firmaPad_'+key);
+  const imgDataUrl = canvas.toDataURL('image/png');
+  firmas[key] = {nombre, rut, imgDataUrl, firmadoAt: new Date().toISOString()};
+  const estadoEl = document.getElementById('firmaEstado_'+key);
+  estadoEl.textContent = 'Firmado — ' + fmtFechaHora(firmas[key].firmadoAt);
+  estadoEl.className = 'firma-estado firmado';
+  const idx = ROLES.findIndex(r=>r.key===key);
+  document.getElementById('firmaNombre_'+key).disabled = true;
+  document.getElementById('firmaRut_'+key).disabled = true;
+  document.querySelector(`[data-firmar="${key}"]`).disabled = true;
+  document.querySelector(`[data-limpiar="${key}"]`).disabled = true;
+  if (idx+1 < ROLES.length){
+    const nextBtn = document.querySelector(`[data-firmar="${ROLES[idx+1].key}"]`);
+    if (nextBtn) nextBtn.disabled = false;
+  }
+  markDirty(); persistSavedIndicator();
+}
+
+function fmtFechaHora(iso){
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// --- Descarga: capacidad "downloads" en Artifact publicado, o descarga clasica por blob ---
+async function offerDownload(filename, dataOrBlob){
+  if (window.claude && typeof window.claude.use === 'function'){
+    try {
+      const downloads = await window.claude.use('downloads');
+      if (downloads){
+        try{
+          await downloads.save({filename, data: dataOrBlob});
+          return true;
+        }catch(err){
+          const code = err && err.code;
+          if (code === 'declined'){
+          } else if (code === 'extension_not_enabled' || code === 'rejected_extension'){
+            alert('Este visor no permite descargar archivos ".' + filename.split('.').pop() + '" directamente. Abre el piloto como archivo HTML (descargado desde el chat) para generar el PDF/JSON sin esta restricción.');
+          } else {
+            alert('No se pudo guardar el archivo: ' + (err && err.message ? err.message : 'error desconocido'));
+          }
+          return false;
+        }
+      }
+    } catch(e) { /* sigue al metodo clasico */ }
+  }
+  const blob = (dataOrBlob instanceof Blob) ? dataOrBlob : new Blob([dataOrBlob], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// --- Guardar / cargar avance ---
+let dirty = false;
+function markDirty(){ dirty = true; const el=document.getElementById('saveStatus'); el.textContent='Cambios sin guardar'; el.className='save-status dirty'; }
+function persistSavedIndicator(msg){
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg || 'Guardado · ' + fmtFechaHora(new Date().toISOString());
+  el.className = 'save-status saved';
+  dirty = false;
+}
+window.addEventListener('beforeunload', (e) => { if (dirty){ e.preventDefault(); e.returnValue=''; } });
+
+function serializarGeneral(){
+  const ids = ['g_boleta','g_muestra','g_fecha','g_horaProyeccion','g_edadHormigon','g_empresa','g_rutEmpresa',
+    'g_obra','g_elemento','g_metodo','g_responsable','g_solicitadoPor','g_exigMin','g_observaciones'];
+  const out = {};
+  ids.forEach(id => { out[id.replace('g_','')] = document.getElementById(id).value; });
+  return out;
+}
+function restaurarGeneral(g){
+  if (!g) return;
+  Object.keys(g).forEach(k => {
+    const el = document.getElementById('g_'+k);
+    if (!el) return;
+    el.value = g[k];
+  });
+}
+
+document.getElementById('btnGuardar').addEventListener('click', async () => {
+  const data = {
+    tipo: 'resistencia_corta_edad', version: 1,
+    general: serializarGeneral(),
+    determinaciones: determinaciones.map(d => ({hora:d.hora, fuerza:d.fuerza, profundidad:d.profundidad, extraccion:d.extraccion, resistenciaMPa:d.resistenciaMPa})),
+    firmas,
+    guardadoAt: new Date().toISOString(),
+  };
+  const muestra = document.getElementById('g_muestra').value || 'sinmuestra';
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  const ok = await offerDownload(`Avance_ResistenciaCortaEdad_${muestra}_${stamp}.json`, JSON.stringify(data,null,2));
+  if (ok) persistSavedIndicator();
+});
+
+document.getElementById('btnCargar').addEventListener('click', () => document.getElementById('fileInputAvance').click());
+document.getElementById('fileInputAvance').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      restaurarGeneral(data.general);
+      determinaciones = (data.determinaciones || []).map(x => nuevaDeterminacion(x));
+      if (!determinaciones.length) determinaciones.push(nuevaDeterminacion());
+      renderDeterminaciones();
+      firmas = data.firmas || {};
+      initFirmas();
+      Object.keys(firmas).forEach(key => {
+        const f = firmas[key];
+        document.getElementById('firmaNombre_'+key).value = f.nombre;
+        document.getElementById('firmaRut_'+key).value = f.rut;
+        document.getElementById('firmaNombre_'+key).disabled = true;
+        document.getElementById('firmaRut_'+key).disabled = true;
+        const canvas = document.getElementById('firmaPad_'+key);
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+        img.src = f.imgDataUrl;
+        padCtx[key].hasDrawn = true;
+        const estadoEl = document.getElementById('firmaEstado_'+key);
+        estadoEl.textContent = 'Firmado — ' + fmtFechaHora(f.firmadoAt);
+        estadoEl.className = 'firma-estado firmado';
+        const btnFirmar = document.querySelector(`[data-firmar="${key}"]`);
+        if (btnFirmar) btnFirmar.disabled = true;
+        const btnLimpiar = document.querySelector(`[data-limpiar="${key}"]`);
+        if (btnLimpiar) btnLimpiar.disabled = true;
+      });
+      ROLES.forEach((r,idx) => {
+        if (!firmas[r.key] && idx>0){
+          const prevFirmado = !!firmas[ROLES[idx-1].key];
+          const btn = document.querySelector(`[data-firmar="${r.key}"]`);
+          if (btn) btn.disabled = !prevFirmado;
+        }
+      });
+      persistSavedIndicator('Avance cargado · ' + fmtFechaHora(new Date().toISOString()));
+      calcularTodo();
+    }catch(err){
+      alert('No se pudo leer el archivo de avance: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+// --- QR ---
+function dibujarQR(doc, text, x, y, size, moduleColor){
+  const qr = qrcode(0, 'M');
+  qr.addData(text); qr.make();
+  const count = qr.getModuleCount();
+  const pad = size*0.08;
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(x-pad, y-pad, size+pad*2, size+pad*2, 1.2, 1.2, 'F');
+  const cell = size/count;
+  doc.setFillColor(moduleColor[0], moduleColor[1], moduleColor[2]);
+  for (let r=0;r<count;r++){
+    for (let c=0;c<count;c++){
+      if (qr.isDark(r,c)){
+        doc.rect(x+c*cell, y+r*cell, cell+0.01, cell+0.01, 'F');
+      }
+    }
+  }
+}
+
+// Sanitiza caracteres Unicode que jsPDF/Helvetica no renderiza (mismo problema documentado en
+// pilotos anteriores: ³, ², Δ, ≤, ≥, ρ).
+function pdfAsciiSafe(str){
+  return String(str)
+    .replace(/³/g, '3')
+    .replace(/²/g, '2')
+    .replace(/Δ/g, 'diferencia ')
+    .replace(/≤/g, '<=')
+    .replace(/≥/g, '>=')
+    .replace(/ρ/g, 'rho');
+}
+
+// --- PDF "Alternativa C" ---
+function generarPDF(soloProvisorio){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const pageW = 216, pageH = 279, margin = 14;
+  const g = serializarGeneral();
+  const muestra = g.muestra || 'S-N';
+  const anio = new Date().getFullYear();
+  const codigo = `RCE-${anio}-${muestra}`;
+
+  const nivelesFirmados = ROLES.filter(r => firmas[r.key]).length;
+  const validado = !soloProvisorio && nivelesFirmados === ROLES.length;
+  const estadoTxt = validado ? 'Informe validado' : 'Resultado provisorio';
+  const estadoColor = validado ? [0,184,92] : [255,179,0];
+
+  doc.setFillColor(13,21,38); doc.rect(0,0,pageW,26,'F');
+  doc.setFillColor(0,230,118); doc.roundedRect(margin, 7, 12, 12, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('QC', margin+6, 15, {align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(15);
+  doc.text('QCdigital', margin+18, 13);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('MODULO LABORATORIO', margin+18, 18.5);
+  doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Resistencia a Corta Edad - Hormigon Proyectado', pageW-margin, 15, {align:'right'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('Hormigones — UNE-EN 14488-2', pageW-margin, 20, {align:'right'});
+
+  let y = 30;
+  doc.setFillColor(estadoColor[0],estadoColor[1],estadoColor[2]);
+  doc.roundedRect(margin, y, pageW-margin*2, 14, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(estadoTxt, margin+6, y+9);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Codigo: ' + codigo, margin+70, y+9);
+  dibujarQR(doc, `QCDIGITAL-LAB|${codigo}|${estadoTxt}`, pageW-margin-16, y-1, 16, [13,21,38]);
+  y += 20;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2);
+  doc.setFontSize(8.5); doc.setTextColor(60,60,60);
+  // metaRow trunca el valor con "..." si no cabe en el ancho de columna disponible (mismo patron
+  // agregado en Espesor sobre Sustrato tras el bug de superposicion de texto largo).
+  const metaRow = (label, val, x, maxWidth) => {
+    doc.setFont('helvetica','bold');
+    const labelTxt = label+':';
+    doc.text(labelTxt, x, y);
+    const labelW = doc.getTextWidth(labelTxt);
+    doc.setFont('helvetica','normal');
+    let valTxt = String(val||'-');
+    const availW = (maxWidth||60) - labelW - 2;
+    if (doc.getTextWidth(valTxt) > availW){
+      while (valTxt.length > 1 && doc.getTextWidth(valTxt+'...') > availW){
+        valTxt = valTxt.slice(0, -1);
+      }
+      valTxt += '...';
+    }
+    doc.text(valTxt, x+labelW+2, y);
+  };
+  metaRow('Boleta N°', g.boleta, margin, 62);
+  metaRow('Muestra N°', g.muestra, margin+64, 62);
+  metaRow('Fecha ensayo', g.fecha, margin+128, 58);
+  y += 6;
+  metaRow('Empresa', g.empresa, margin, 62);
+  metaRow('Edad hormigon (h)', g.edadHormigon, margin+64, 62);
+  const metodoTxt = g.metodo === 'clavo' ? 'Hincado de clavo (Hilti)' : 'Penetrometro de aguja';
+  metaRow('Metodo', metodoTxt, margin+128, 58);
+  y += 6;
+  metaRow('Exigencia min.', g.exigMin ? g.exigMin+' MPa' : '-', margin, 62);
+  y += 8;
+
+  const cards = [
+    ['Resistencia promedio', pdfAsciiSafe(document.getElementById('rc_promedio').textContent)],
+    ['Rango (min-max)', pdfAsciiSafe(document.getElementById('rc_rango').textContent)],
+    ['Lecturas / clavos validos', pdfAsciiSafe(document.getElementById('rc_validos').textContent)],
+    ['Cumple exigencia', pdfAsciiSafe(document.getElementById('rc_cumple').textContent)],
+  ];
+  const cw = (pageW-margin*2-3*4)/4;
+  cards.forEach((c,i) => {
+    const cx = margin + i*(cw+4);
+    doc.setFillColor(17,26,48); doc.roundedRect(cx, y, cw, 20, 2, 2, 'F');
+    doc.setTextColor(154,165,192); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(c[0], cx+4, y+7);
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold');
+    const raw = String(c[1]);
+    let fontSize = 11;
+    doc.setFontSize(fontSize);
+    let valLines = doc.splitTextToSize(raw, cw-8);
+    if (valLines.length > 1){
+      fontSize = 8.5;
+      doc.setFontSize(fontSize);
+      valLines = doc.splitTextToSize(raw, cw-8);
+    }
+    valLines = valLines.slice(0,2);
+    const lineH = fontSize*0.42;
+    const startY = valLines.length>1 ? y+11.5 : y+15;
+    valLines.forEach((ln,li) => { doc.text(ln, cx+4, startY+li*lineH); });
+  });
+  y += 26;
+
+  // Chart image (izquierda) + tabla de lecturas (derecha)
+  const chartCanvas = document.getElementById('chartResistencia');
+  let chartImg = null;
+  try { chartImg = chartCanvas.toDataURL('image/png'); } catch(e){}
+  const chartH = 62, chartW = 82;
+  if (chartImg){
+    doc.setFillColor(12,20,36); doc.rect(margin, y, chartW, chartH, 'F');
+    doc.addImage(chartImg, 'PNG', margin+2, y+2, chartW-4, chartH-4);
+    doc.setDrawColor(90,102,144); doc.setLineWidth(0.3); doc.rect(margin, y, chartW, chartH);
+  }
+
+  const tableX = margin + chartW + 6;
+  const tableW = pageW - margin - tableX;
+  const metodoActual = g.metodo === 'clavo' ? 'clavo' : 'aguja';
+  doc.setFontSize(7); doc.setTextColor(20,20,20); doc.setFont('helvetica','bold');
+  doc.text('N°', tableX, y+4);
+  doc.text(metodoActual==='clavo' ? 'Prof. (mm)' : 'Fuerza (N)', tableX+10, y+4);
+  doc.text('Resist. (MPa)', tableX+tableW-24, y+4);
+  doc.setDrawColor(150,150,150); doc.line(tableX, y+6, tableX+tableW, y+6);
+  // Este piloto admite hasta 12 lecturas (mas que los 5 de otros pilotos con esta misma tabla
+  // lateral) -- una altura de fila fija de 5.5mm (heredada de Contenido en Fibras/Espesor sobre
+  // Sustrato) cortaba en silencio la ultima fila con solo 10 lecturas cargadas (bug encontrado en
+  // la revision visual del PDF). La altura de fila ahora se calcula para que las 12 lecturas
+  // maximas siempre quepan dentro de la altura fija del recuadro del grafico.
+  const filasMax = 12;
+  const rowH = (chartH - 13) / filasMax;
+  let ty = y+11;
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.2); doc.setTextColor(40,40,40);
+  determinaciones.forEach((d, idx) => {
+    const r = calcularDeterminacion(d, metodoActual);
+    if (ty > y + chartH - 2) return;
+    doc.text(String(idx+1), tableX, ty);
+    const secColVal = metodoActual==='clavo' ? d.profundidad : d.fuerza;
+    doc.text(secColVal ? String(secColVal) : '-', tableX+10, ty);
+    doc.text(r.resistenciaMPa!==null ? String(r.resistenciaMPa) : '-', tableX+tableW-24, ty);
+    ty += rowH;
+  });
+  y += chartH + 8;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2); doc.line(margin, y, pageW-margin, y); y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Informacion general', margin, y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  const obraLines = doc.splitTextToSize('Obra / Proyecto: ' + (g.obra||'-'), pageW-margin*2);
+  doc.text(obraLines, margin, y); y += obraLines.length*4.5;
+  const sectorLines = doc.splitTextToSize('Sector / Tramo evaluado: ' + (g.elemento||'-'), pageW-margin*2);
+  doc.text(sectorLines, margin, y); y += sectorLines.length*4.5;
+  doc.text(`Ensayo realizado por: ${g.responsable||'-'}   Solicitado por: ${g.solicitadoPor||'-'}`, margin, y); y+=5;
+  if (g.observaciones){
+    const obsLines = doc.splitTextToSize('Observaciones: ' + g.observaciones, pageW-margin*2);
+    doc.text(obsLines, margin, y); y += obsLines.length*4.5;
+  }
+  y += 4;
+
+  doc.setDrawColor(42,54,84); doc.line(margin, y, pageW-margin, y); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Firmas', margin, y); y+=5;
+  const fw = (pageW-margin*2-2*6)/3;
+  ROLES.forEach((r,i) => {
+    const fx = margin + i*(fw+6);
+    doc.setDrawColor(180,180,180); doc.rect(fx, y, fw, 28);
+    const f = firmas[r.key];
+    if (f && f.imgDataUrl){
+      try{ doc.addImage(f.imgDataUrl, 'PNG', fx+3, y+2, fw-6, 14); }catch(e){}
+      doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0);
+      doc.text(f.nombre, fx+3, y+20);
+      doc.setFont('helvetica','normal'); doc.text('RUT ' + f.rut, fx+3, y+24);
+      doc.setFontSize(6.5); doc.setTextColor(100,100,100);
+      doc.text(`N° ${codigo}-${r.key.toUpperCase()}`, fx+3, y+27.5);
+    } else {
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Pendiente de firma', fx+fw/2, y+14, {align:'center'});
+    }
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(120,120,120);
+    doc.text(r.label, fx+3, y+ (f? 0 : -2) );
+  });
+  y += 34;
+
+  doc.setFontSize(7); doc.setTextColor(154,165,192);
+  doc.text('QCdigital Laboratorio · Documento generado automaticamente · ' + fmtFechaHora(new Date().toISOString()), margin, pageH-10);
+  doc.text('Codigo de verificacion: ' + codigo, pageW-margin, pageH-10, {align:'right'});
+
+  const fname = `Informe_${codigo}_${validado?'validado':'provisorio'}.pdf`;
+  offerDownload(fname, doc.output('blob'));
+}
+
+document.getElementById('btnPdfProvisorio').addEventListener('click', () => generarPDF(true));
+document.getElementById('btnPdfValidado').addEventListener('click', () => generarPDF(false));
+
+// init
+initFirmas();
+determinaciones.push(nuevaDeterminacion());
+renderDeterminaciones();
+calcularTodo();
+</script>
+</body>
+</html>

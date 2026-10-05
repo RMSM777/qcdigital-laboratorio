@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCDigital Laboratorio — Densidad Aparente del Hormigón Fresco</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0d1526;
+    --navy2:#141f38;
+    --navy3:#1b2947;
+    --green:#00e676;
+    --green-dark:#00b85c;
+    --amber:#ffb300;
+    --red:#ff5252;
+    --border:#2a3654;
+    --text:#e8ecf5;
+    --text-dim:#9aa5c0;
+    --card-bg:#111a30;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI', Arial, sans-serif; background:#0a1120; color:var(--text);
+    padding-bottom:60px;
+  }
+  header.app-header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);
+    padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:2px solid var(--green); position:sticky; top:0; z-index:50;
+  }
+  .wordmark{display:flex; align-items:center; gap:12px;}
+  .wordmark .logo{
+    width:38px; height:38px; border-radius:8px;
+    background:linear-gradient(135deg,var(--green) 0%, var(--green-dark) 100%);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy); font-size:18px;
+  }
+  .wordmark .brand{font-size:20px; font-weight:800; letter-spacing:.5px;}
+  .wordmark .brand span{color:var(--green);}
+  .tag{font-size:11px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; margin-top:2px;}
+  .save-bar{display:flex; align-items:center; gap:10px;}
+  .save-status{font-size:12px; color:var(--text-dim);}
+  .save-status.dirty{color:var(--amber);}
+  .save-status.saved{color:var(--green);}
+  button{
+    cursor:pointer; border:1px solid var(--border); background:var(--navy2); color:var(--text);
+    padding:9px 16px; border-radius:7px; font-size:13px; font-weight:600; transition:.15s;
+  }
+  button:hover{border-color:var(--green);}
+  button.primary{background:var(--green); color:var(--navy); border-color:var(--green);}
+  button.primary:hover{background:var(--green-dark);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  main{max-width:1180px; margin:0 auto; padding:24px 20px;}
+  h1{font-size:22px; margin:0 0 4px;}
+  .subtitle{color:var(--text-dim); font-size:13px; margin-bottom:22px;}
+  .card{
+    background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h2{font-size:15px; margin:0 0 16px; color:var(--green); display:flex; align-items:center; gap:8px;}
+  .card h2 .num{
+    width:24px; height:24px; border-radius:50%; background:var(--navy3); color:var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--green);
+  }
+  .subhead{font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; margin:16px 0 10px; border-top:1px solid var(--border); padding-top:14px;}
+  .subhead:first-of-type{border-top:none; padding-top:0; margin-top:0;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12px; color:var(--text-dim);}
+  .field input, .field select, .field textarea{
+    background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:6px; font-size:13px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--green);}
+  .hint{font-size:11px; color:var(--text-dim); margin-top:2px;}
+  .hint.warn{color:var(--amber);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left; padding:8px 6px; color:var(--text-dim); font-weight:600; border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  td{padding:6px; border-bottom:1px solid #1a2440; vertical-align:middle;}
+  td input, td select{
+    width:100%; background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:6px 7px; border-radius:5px; font-size:12.5px; font-family:inherit;
+  }
+  .btn-icon{padding:5px 9px; font-size:12px;}
+  .btn-danger{border-color:var(--red); color:var(--red);}
+  .btn-danger:hover{background:rgba(255,82,82,.12);}
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;}
+  .badge.ok{background:rgba(0,230,118,.15); color:var(--green);}
+  .badge.warn{background:rgba(255,179,0,.15); color:var(--amber);}
+  .badge.bad{background:rgba(255,82,82,.15); color:var(--red);}
+  .badge.neutral{background:rgba(154,165,192,.15); color:var(--text-dim);}
+  .toolbar{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center;}
+  .results-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .result-card{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .result-card .label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .result-card .value{font-size:22px; font-weight:800; margin-top:4px;}
+  .chart-wrap{background:#0c1424; border:1px solid var(--border); border-radius:10px; padding:14px; height:280px;}
+  .chart-caption{font-size:11px; color:var(--text-dim); margin-top:8px; text-align:center;}
+  .firmas-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;}
+  .firma-box{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px;}
+  .firma-box h3{font-size:13px; margin:0 0 4px; display:flex; justify-content:space-between; align-items:center;}
+  .firma-box .rol-tag{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .firma-pad-wrap canvas{width:100%; height:110px; background:#fff; border-radius:6px; cursor:crosshair; touch-action:none;}
+  .firma-estado{font-size:12px; margin-top:8px;}
+  .firma-estado.pendiente{color:var(--text-dim);}
+  .firma-estado.firmado{color:var(--green); font-weight:600;}
+  .footer-note{font-size:11px; color:var(--text-dim); line-height:1.6; margin-top:26px; padding:16px 18px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px;}
+  .footer-note b{color:var(--text);}
+</style>
+</head>
+<body><div id="qcdLabBar" style="position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;background:#0d1526;color:#fff;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:9px 14px;padding-top:calc(9px + env(safe-area-inset-top));border-bottom:2px solid #f5851f"><a href="../index.html#ensayos" style="color:#fff;text-decoration:none">&#8249; Laboratorio</a><span style="flex:1;text-align:center;opacity:.8;font-weight:500">Densidad aparente, rendimiento y contenido de cemento del ho</span><a href="../documento.html?c=PTE-HO-03" style="color:#f5851f;text-decoration:none">Ver PTE</a></div>
+
+<header class="app-header">
+  <div class="wordmark">
+    <div class="logo">QC</div>
+    <div>
+      <div class="brand">QC<span>digital</span></div>
+      <div class="tag">Módulo Laboratorio</div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <span id="saveStatus" class="save-status">Sin cambios</span>
+    <button id="btnCargar">Cargar avance</button>
+    <input type="file" id="fileInputAvance" accept=".json" style="display:none">
+    <button id="btnGuardar" class="primary">Guardar avance</button>
+  </div>
+</header>
+
+<main>
+  <h1>Densidad Aparente del Hormigón Fresco</h1>
+  <div class="subtitle">Hormigones · NCh 1564.Of2009 — Determinación de la densidad aparente del hormigón fresco · Piloto QCDigital</div>
+
+  <div class="card">
+    <h2><span class="num">1</span> Información general</h2>
+    <div class="grid">
+      <div class="field"><label>N° Boleta</label><input id="g_boleta"></div>
+      <div class="field"><label>N° Muestra</label><input id="g_muestra"></div>
+      <div class="field"><label>Fecha de ensayo</label><input type="date" id="g_fecha"></div>
+      <div class="field"><label>Fecha de informe</label><input type="date" id="g_fechaInforme"></div>
+      <div class="field"><label>Empresa solicitante</label><input id="g_empresa"></div>
+      <div class="field"><label>RUT empresa</label><input id="g_rutEmpresa"></div>
+      <div class="field" style="grid-column:span 2"><label>Obra / Proyecto</label><input id="g_obra"></div>
+      <div class="field"><label>Lugar de realización del ensayo</label><input id="g_direccionObra" placeholder="ej. Obra, en terreno"></div>
+      <div class="field"><label>Dosificación / Tipo de hormigón</label><input id="g_dosificacion" placeholder="ej. H30, Grado Normal"></div>
+      <div class="field"><label>Tamaño máx. nominal árido (mm)</label><input type="number" step="0.1" id="g_tmn"></div>
+      <div class="field"><label>Temperatura ambiente (°C)</label><input type="number" step="0.1" id="g_tempAmb"></div>
+      <div class="field"><label>Temperatura del hormigón (°C)</label><input type="number" step="0.1" id="g_tempHor"></div>
+      <div class="field"><label>Ensayo realizado por</label><input id="g_responsable"></div>
+      <div class="field"><label>Solicitado por</label><input id="g_solicitadoPor"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Recipiente y método</h2>
+    <div class="subhead">Recipiente (4.1, Tabla 1)</div>
+    <div class="grid">
+      <div class="field">
+        <label>Capacidad nominal</label>
+        <select id="g_capacidadNominal">
+          <option value="5">5 L (TMN ≤ 19,0 mm)</option>
+          <option value="10">10 L (TMN ≤ 37,5 mm)</option>
+          <option value="15">15 L (TMN ≤ 50 mm)</option>
+          <option value="otro">Otro / personalizado</option>
+        </select>
+      </div>
+      <div class="field"><label>Volumen del recipiente V (L)</label><input type="number" step="0.001" id="g_volumenV"></div>
+      <div class="field"><label>Fecha última determinación de V</label><input type="date" id="g_fechaVolumen"></div>
+    </div>
+    <div class="hint">El volumen se debe determinar antes del primer uso y al menos cada 12 meses (6.1). Se puede calcular con el Anexo A en vez de ingresarlo directo:</div>
+    <div class="grid" style="margin-top:10px">
+      <div class="field"><label>Anexo A — Masa recipiente + placa vacíos (kg)</label><input type="number" step="0.001" id="g_anexoAVacio"></div>
+      <div class="field"><label>Anexo A — Masa recipiente + placa + agua (kg)</label><input type="number" step="0.001" id="g_anexoALleno"></div>
+      <div class="field"><label></label><button id="btnCalcularV" type="button">Calcular V desde Anexo A</button></div>
+    </div>
+    <div class="subhead">Método de compactación (6.3–6.4) y asentamiento (NCh1019)</div>
+    <div class="grid">
+      <div class="field">
+        <label>Compactación</label>
+        <select id="g_compactacion">
+          <option value="vibrador_interno">Vibrador interno (2 capas)</option>
+          <option value="mesa_vibradora">Mesa vibradora (1 capa)</option>
+          <option value="varilla_pison">Varilla-pisón manual (3 capas, 25 golpes/capa)</option>
+        </select>
+      </div>
+      <div class="field"><label>Asentamiento de cono (cm) — NCh1019</label><input type="number" step="0.5" id="g_asentamiento"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> Determinaciones de densidad</h2>
+    <div style="overflow-x:auto">
+    <table id="tablaDet">
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>m1 — Masa recipiente vacío (kg)</th>
+          <th>m2 — Masa recipiente + hormigón (kg)</th>
+          <th>Densidad D (kg/m³)</th>
+          <th>Observaciones</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbodyDet"></tbody>
+    </table>
+    </div>
+    <div class="toolbar">
+      <button id="btnAddDet">+ Agregar determinación</button>
+    </div>
+    <div class="hint">D = (m2 − m1) / V, expresada en kg/m³ y aproximada a los 10 kg/m³ más cercanos (6.7).</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> Cálculos adicionales (Anexo C, opcional)</h2>
+    <div class="hint" style="margin-bottom:10px">Se calculan solo si se completan las masas de la amasada. El contenido de aire estimado (Anexo C.4) requiere las densidades reales de cada árido y no está implementado en este piloto.</div>
+    <div class="grid">
+      <div class="field"><label>Masa cemento en la amasada mc (kg)</label><input type="number" step="0.1" id="g_mc"></div>
+      <div class="field"><label>Masa arena en la amasada ma (kg)</label><input type="number" step="0.1" id="g_ma"></div>
+      <div class="field"><label>Masa grava en la amasada mg (kg)</label><input type="number" step="0.1" id="g_mg"></div>
+      <div class="field"><label>Masa agua en la amasada mw (kg)</label><input type="number" step="0.1" id="g_mw"></div>
+      <div class="field"><label>Volumen teórico de diseño Vt (m³, opcional)</label><input type="number" step="0.001" id="g_vt"></div>
+      <div class="field"><label>N° de sacos de cemento (opcional)</label><input type="number" step="1" id="g_nsacos"></div>
+      <div class="field"><label>Densidad de diseño esperada (kg/m³, opcional)</label><input type="number" step="1" id="g_densidadDiseno"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span> Resultados</h2>
+    <div class="results-grid">
+      <div class="result-card"><div class="label">Densidad aparente</div><div class="value" id="rc_densidad">—</div></div>
+      <div class="result-card"><div class="label">Repetibilidad (Anexo B)</div><div class="value" id="rc_repetibilidad" style="font-size:14px">—</div></div>
+      <div class="result-card"><div class="label">Rendimiento de amasada Va</div><div class="value" id="rc_rendimiento" style="font-size:16px">—</div></div>
+      <div class="result-card"><div class="label">Contenido efectivo de cemento</div><div class="value" id="rc_cemento" style="font-size:16px">—</div></div>
+    </div>
+    <div class="results-grid" style="margin-top:14px">
+      <div class="result-card"><div class="label">Rendimiento relativo Rr</div><div class="value" id="rc_rr" style="font-size:16px">—</div></div>
+      <div class="result-card"><div class="label">Rendimiento por saco Rs</div><div class="value" id="rc_rs" style="font-size:16px">—</div></div>
+    </div>
+    <div style="margin-top:18px">
+      <div class="chart-wrap"><canvas id="chartDensidad"></canvas></div>
+      <div class="chart-caption">Barras = densidad por determinación (kg/m³) · línea punteada = densidad de diseño esperada · el eje no parte de cero, para visualizar mejor las variaciones</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span> Observaciones generales</h2>
+    <div class="field"><textarea id="g_observaciones" rows="3" style="width:100%"></textarea></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">7</span> Firmas</h2>
+    <div class="firmas-row" id="firmasRow"></div>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnPdfProvisorio">Generar informe PDF (provisorio)</button>
+    <button id="btnPdfValidado" class="primary">Generar informe PDF</button>
+  </div>
+
+  <div class="footer-note">
+    <b>Notas del piloto QCDigital:</b> este ensayo no tiene un formulario ZN-FOR oficial cargado en el proyecto (igual que Asentamiento de Cono), así que el motor de cálculo se construyó directamente sobre <b>NCh 1564.Of2009</b>: D = (m2 − m1) / V, con V el volumen calibrado del recipiente (Anexo A: V(L) = masa de agua (kg) × 1000 / 998, usando la densidad del agua a 20±5°C como constante fija de la norma, sin tabla de interpolación por temperatura). Los cálculos adicionales de la sección 4 (rendimiento de amasada, rendimiento relativo, rendimiento por saco, contenido efectivo de cemento) vienen del Anexo C, "cuando sea solicitado" según la norma — el contenido de aire estimado del mismo anexo requiere las densidades reales de cada árido y del cemento (NCh1117, NCh1239, NCh154) y queda fuera de alcance de este piloto. El indicador de repetibilidad usa los valores del Anexo B (r = 15 kg/m³, informativo) que la norma documenta solo para el intervalo 2 300–2 400 kg/m³ — fuera de ese rango no hay un valor de referencia publicado, así que el piloto lo marca como no aplicable en vez de inventar un umbral. Igual que en Asentamiento de Cono, la norma (cláusula 7) exige en el informe solo el nombre de quien realiza el ensayo — este piloto mantiene el flujo estándar de 3 niveles (técnico/revisor/validador) de QCDigital por consistencia con el resto del sistema.
+  </div>
+</main>
+
+<script>
+const ROLES = [
+  {key:'tecnico', label:'Técnico de terreno', desc:'Nivel 1 — Captura'},
+  {key:'revisor', label:'Revisor', desc:'Nivel 2 — Filtro de cálculos y datos'},
+  {key:'validador', label:'Validador', desc:'Nivel 3 — Firma oficial'},
+];
+
+// Los campos de "Informacion general" (incluyendo los que participan del calculo: volumenV,
+// mc/ma/mg/mw/vt/nsacos del Anexo C, y densidadDiseno) no tenian ningun listener propio -- sin
+// esto, escribir en ellos no marcaba "cambios sin guardar" ni disparaba calcularTodo(), y solo
+// parecia funcionar en las pruebas porque el usuario tocaba despues algun campo de la tabla de
+// determinaciones (que si dispara el recalculo). Se agrega un listener generico a todos los
+// campos "g_*" para que cualquier edicion en Informacion general quede reflejada de inmediato.
+document.querySelectorAll('main input, main select, main textarea').forEach(el => {
+  if (el.id && el.id.startsWith('g_')){
+    el.addEventListener('input', () => { markDirty(); calcularTodo(); });
+    el.addEventListener('change', () => { markDirty(); calcularTodo(); });
+  }
+});
+
+document.getElementById('btnCalcularV').addEventListener('click', () => {
+  const vacio = parseFloat(document.getElementById('g_anexoAVacio').value);
+  const lleno = parseFloat(document.getElementById('g_anexoALleno').value);
+  if (isNaN(vacio) || isNaN(lleno)){ alert('Completa ambas masas del Anexo A antes de calcular V.'); return; }
+  const masaAgua = lleno - vacio;
+  if (masaAgua <= 0){ alert('La masa llena debe ser mayor que la masa vacía.'); return; }
+  const vLitros = masaAgua * 1000 / 998;
+  document.getElementById('g_volumenV').value = vLitros.toFixed(3);
+  markDirty(); calcularTodo();
+});
+
+let detSeq = 0;
+let determinaciones = []; // {id, m1, m2, obs}
+
+function nuevaDet(vals){
+  detSeq++;
+  return Object.assign({id:'d'+detSeq, m1:'', m2:'', obs:''}, vals||{});
+}
+
+function roundToTen(v){ return Math.round(v/10)*10; }
+
+function renderDet(){
+  const tbody = document.getElementById('tbodyDet');
+  tbody.innerHTML = '';
+  determinaciones.forEach((d, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = d.id;
+    tr.innerHTML = `
+      <td style="text-align:center">${idx+1}</td>
+      <td><input type="number" step="0.001" class="f-m1" value="${d.m1}" style="width:100px"></td>
+      <td><input type="number" step="0.001" class="f-m2" value="${d.m2}" style="width:100px"></td>
+      <td><b><span class="f-densidad">—</span></b></td>
+      <td><input class="f-obs" value="${d.obs}" style="width:150px"></td>
+      <td><button class="btn-icon btn-danger f-del">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  attachDetHandlers();
+  calcularTodo();
+}
+
+function attachDetHandlers(){
+  document.querySelectorAll('#tbodyDet tr').forEach(tr => {
+    const id = tr.dataset.id;
+    const d = determinaciones.find(x=>x.id===id);
+    const bind = (sel, key) => {
+      const el = tr.querySelector(sel);
+      el.addEventListener('input', () => { d[key] = el.value; markDirty(); calcularTodo(); });
+    };
+    bind('.f-m1','m1'); bind('.f-m2','m2'); bind('.f-obs','obs');
+    tr.querySelector('.f-del').addEventListener('click', () => {
+      determinaciones = determinaciones.filter(x=>x.id!==id);
+      renderDet(); markDirty();
+    });
+  });
+}
+
+document.getElementById('btnAddDet').addEventListener('click', () => {
+  determinaciones.push(nuevaDet());
+  renderDet(); markDirty();
+});
+
+// Plugin Chart.js para dibujar una linea de referencia horizontal (densidad de diseno)
+// directamente sobre el area del grafico -- un dataset tipo "line" con un unico punto en el
+// eje X (caso mas comun aqui: 1 sola determinacion) colapsa a un punto invisible en vez de
+// una linea (mismo problema resuelto en el piloto de Asentamiento de Cono).
+const referenceLinePlugin = {
+  id: 'referenceLine',
+  afterDatasetsDraw(chart, args, opts){
+    if (!opts || opts.value===null || opts.value===undefined || isNaN(opts.value)) return;
+    const {ctx, chartArea, scales} = chart;
+    if (!chartArea || !scales.y) return;
+    const y = scales.y.getPixelForValue(opts.value);
+    if (y < chartArea.top || y > chartArea.bottom) return;
+    ctx.save();
+    ctx.strokeStyle = '#ffb300';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    ctx.moveTo(chartArea.left, y);
+    ctx.lineTo(chartArea.right, y);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined') Chart.register(referenceLinePlugin);
+
+let chart = null;
+function calcularTodo(){
+  const g = serializarGeneral();
+  const V_L = parseFloat(g.volumenV);
+
+  const valores = []; // D redondeado por fila
+  document.querySelectorAll('#tbodyDet tr').forEach((tr) => {
+    const m1 = parseFloat(tr.querySelector('.f-m1').value);
+    const m2 = parseFloat(tr.querySelector('.f-m2').value);
+    const spanD = tr.querySelector('.f-densidad');
+    if (!isNaN(m1) && !isNaN(m2) && !isNaN(V_L) && V_L>0){
+      const Draw = (m2-m1)*1000/V_L; // kg/m3
+      const D = roundToTen(Draw);
+      spanD.textContent = D + ' kg/m³';
+      spanD.style.color = '';
+      valores.push(D);
+    } else {
+      spanD.textContent = '—';
+    }
+  });
+
+  const n = valores.length;
+  const promedio = n ? roundToTen(valores.reduce((a,b)=>a+b,0)/n) : null;
+
+  document.getElementById('rc_densidad').textContent = promedio!==null ? promedio+' kg/m³' : '—';
+
+  // Repetibilidad (Anexo B): r=15 kg/m3, solo definido para 2300-2400 kg/m3
+  let repHtml = '<span class="badge neutral">Se necesitan 2+ determinaciones</span>';
+  if (n >= 2){
+    const rango = Math.max(...valores) - Math.min(...valores);
+    if (promedio >= 2300 && promedio <= 2400){
+      repHtml = rango <= 15
+        ? `<span class="badge ok">OK (diferencia ${rango} kg/m³, límite 15)</span>`
+        : `<span class="badge warn">Revisar (diferencia ${rango} kg/m³, límite 15)</span>`;
+    } else {
+      repHtml = '<span class="badge neutral">Anexo B no aplica fuera de 2300–2400 kg/m³</span>';
+    }
+  }
+  document.getElementById('rc_repetibilidad').innerHTML = repHtml;
+
+  // Anexo C: rendimiento de amasada
+  const mc = parseFloat(g.mc), ma = parseFloat(g.ma), mg = parseFloat(g.mg), mw = parseFloat(g.mw);
+  const vt = parseFloat(g.vt), nsacos = parseFloat(g.nsacos);
+  const hayAmasada = !isNaN(mc) && !isNaN(ma) && !isNaN(mg) && !isNaN(mw) && promedio!==null;
+
+  let va = null;
+  if (hayAmasada){
+    va = (mc+ma+mg+mw)/promedio; // m3
+    document.getElementById('rc_rendimiento').textContent = va.toFixed(3)+' m³';
+    document.getElementById('rc_cemento').textContent = (mc/va).toFixed(0)+' kg/m³';
+  } else {
+    document.getElementById('rc_rendimiento').textContent = 'No solicitado';
+    document.getElementById('rc_cemento').textContent = 'No solicitado';
+  }
+
+  if (hayAmasada && !isNaN(vt) && vt>0){
+    document.getElementById('rc_rr').textContent = ((va/vt)*100).toFixed(0)+'%';
+  } else {
+    document.getElementById('rc_rr').textContent = 'No solicitado';
+  }
+  if (hayAmasada && !isNaN(nsacos) && nsacos>0){
+    document.getElementById('rc_rs').textContent = (va/nsacos).toFixed(3)+' m³/saco';
+  } else {
+    document.getElementById('rc_rs').textContent = 'No solicitado';
+  }
+
+  const densidadDiseno = parseFloat(g.densidadDiseno);
+  dibujarChart(valores, isNaN(densidadDiseno)?null:densidadDiseno);
+}
+
+function dibujarChart(valores, densidadDiseno){
+  const ctx = document.getElementById('chartDensidad').getContext('2d');
+  const labels = valores.map((v,i) => 'Det. '+(i+1));
+  if (chart) chart.destroy();
+
+  const todos = valores.slice();
+  if (densidadDiseno!==null) todos.push(densidadDiseno);
+  let yMin = 2000, yMax = 2600;
+  if (todos.length){
+    const mn = Math.min(...todos), mx = Math.max(...todos);
+    const pad = Math.max((mx-mn)*0.25, 20);
+    yMin = Math.max(0, Math.floor((mn-pad)/10)*10);
+    yMax = Math.ceil((mx+pad)/10)*10;
+  }
+
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label:'Densidad (kg/m³)', data: valores, backgroundColor:'#00e676', borderRadius:4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display:false }, referenceLine: { value: densidadDiseno } },
+      scales: {
+        x: { ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' } },
+        y: { min:yMin, max:yMax, ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' }, title:{display:true,text:'Densidad (kg/m³)',color:'#9aa5c0'} }
+      }
+    }
+  });
+}
+
+// --- Firmas ---
+let firmas = {};
+function initFirmas(){
+  const wrap = document.getElementById('firmasRow');
+  wrap.innerHTML = '';
+  ROLES.forEach((r,i) => {
+    const box = document.createElement('div');
+    box.className = 'firma-box';
+    box.innerHTML = `
+      <h3>${r.label} <span class="rol-tag">${r.desc}</span></h3>
+      <div class="field" style="margin-bottom:6px"><label>Nombre completo</label><input id="firmaNombre_${r.key}"></div>
+      <div class="field" style="margin-bottom:6px"><label>RUT</label><input id="firmaRut_${r.key}"></div>
+      <div class="firma-pad-wrap"><canvas id="firmaPad_${r.key}" width="400" height="110"></canvas></div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="btn-icon" data-limpiar="${r.key}">Limpiar</button>
+        <button class="btn-icon primary" data-firmar="${r.key}" ${i>0?'disabled':''}>Firmar</button>
+      </div>
+      <div class="firma-estado pendiente" id="firmaEstado_${r.key}">Pendiente de firma</div>
+    `;
+    wrap.appendChild(box);
+  });
+  ROLES.forEach(r => setupFirmaPad(r.key));
+  wrap.querySelectorAll('[data-limpiar]').forEach(btn => btn.addEventListener('click', () => limpiarPad(btn.dataset.limpiar)));
+  wrap.querySelectorAll('[data-firmar]').forEach(btn => btn.addEventListener('click', () => firmarRol(btn.dataset.firmar)));
+}
+
+const padCtx = {};
+function setupFirmaPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#0d1526'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  padCtx[key] = {ctx, drawing:false, hasDrawn:false};
+  const getPos = (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+    return {x: cx * (canvas.width/rect.width), y: cy * (canvas.height/rect.height)};
+  };
+  const start = (ev) => { ev.preventDefault(); const p = getPos(ev); padCtx[key].drawing=true; padCtx[key].hasDrawn=true; ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  const move = (ev) => { if(!padCtx[key].drawing) return; ev.preventDefault(); const p = getPos(ev); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+  const end = () => { padCtx[key].drawing=false; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function limpiarPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  padCtx[key].hasDrawn = false;
+}
+
+function firmarRol(key){
+  const nombre = document.getElementById('firmaNombre_'+key).value.trim();
+  const rut = document.getElementById('firmaRut_'+key).value.trim();
+  if (!nombre || !rut){ alert('Completa nombre y RUT antes de firmar.'); return; }
+  if (!padCtx[key].hasDrawn){ alert('Dibuja la firma en el recuadro antes de firmar.'); return; }
+  const canvas = document.getElementById('firmaPad_'+key);
+  const imgDataUrl = canvas.toDataURL('image/png');
+  firmas[key] = {nombre, rut, imgDataUrl, firmadoAt: new Date().toISOString()};
+  const estadoEl = document.getElementById('firmaEstado_'+key);
+  estadoEl.textContent = 'Firmado — ' + fmtFechaHora(firmas[key].firmadoAt);
+  estadoEl.className = 'firma-estado firmado';
+  const idx = ROLES.findIndex(r=>r.key===key);
+  document.getElementById('firmaNombre_'+key).disabled = true;
+  document.getElementById('firmaRut_'+key).disabled = true;
+  document.querySelector(`[data-firmar="${key}"]`).disabled = true;
+  document.querySelector(`[data-limpiar="${key}"]`).disabled = true;
+  if (idx+1 < ROLES.length){
+    const nextBtn = document.querySelector(`[data-firmar="${ROLES[idx+1].key}"]`);
+    if (nextBtn) nextBtn.disabled = false;
+  }
+  markDirty(); persistSavedIndicator();
+}
+
+function fmtFechaHora(iso){
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// --- Descarga: capacidad "downloads" en Artifact publicado, o descarga clásica por blob ---
+async function offerDownload(filename, dataOrBlob){
+  if (window.claude && typeof window.claude.use === 'function'){
+    try {
+      const downloads = await window.claude.use('downloads');
+      if (downloads){
+        try{
+          await downloads.save({filename, data: dataOrBlob});
+          return true;
+        }catch(err){
+          const code = err && err.code;
+          if (code === 'declined'){
+          } else if (code === 'extension_not_enabled' || code === 'rejected_extension'){
+            alert('Este visor no permite descargar archivos ".' + filename.split('.').pop() + '" directamente. Abre el piloto como archivo HTML (descargado desde el chat) para generar el PDF/JSON sin esta restricción.');
+          } else {
+            alert('No se pudo guardar el archivo: ' + (err && err.message ? err.message : 'error desconocido'));
+          }
+          return false;
+        }
+      }
+    } catch(e) { /* sigue al método clásico */ }
+  }
+  const blob = (dataOrBlob instanceof Blob) ? dataOrBlob : new Blob([dataOrBlob], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// --- Guardar / cargar avance ---
+let dirty = false;
+function markDirty(){ dirty = true; const el=document.getElementById('saveStatus'); el.textContent='Cambios sin guardar'; el.className='save-status dirty'; }
+function persistSavedIndicator(msg){
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg || 'Guardado · ' + fmtFechaHora(new Date().toISOString());
+  el.className = 'save-status saved';
+  dirty = false;
+}
+window.addEventListener('beforeunload', (e) => { if (dirty){ e.preventDefault(); e.returnValue=''; } });
+
+function serializarGeneral(){
+  const ids = ['g_boleta','g_muestra','g_fecha','g_fechaInforme','g_empresa','g_rutEmpresa',
+    'g_obra','g_direccionObra','g_dosificacion','g_tmn','g_tempAmb','g_tempHor',
+    'g_responsable','g_solicitadoPor','g_capacidadNominal','g_volumenV','g_fechaVolumen',
+    'g_anexoAVacio','g_anexoALleno','g_compactacion','g_asentamiento',
+    'g_mc','g_ma','g_mg','g_mw','g_vt','g_nsacos','g_densidadDiseno','g_observaciones'];
+  const out = {};
+  ids.forEach(id => { out[id.replace('g_','')] = document.getElementById(id).value; });
+  return out;
+}
+function restaurarGeneral(g){
+  if (!g) return;
+  Object.keys(g).forEach(k => { const el = document.getElementById('g_'+k); if (el) el.value = g[k]; });
+}
+
+document.getElementById('btnGuardar').addEventListener('click', async () => {
+  const data = {
+    tipo: 'densidad_hormigon_fresco', version: 1,
+    general: serializarGeneral(), determinaciones: determinaciones, firmas: firmas,
+    guardadoAt: new Date().toISOString(),
+  };
+  const muestra = document.getElementById('g_muestra').value || 'sinmuestra';
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  const ok = await offerDownload(`Avance_DensidadHormigonFresco_${muestra}_${stamp}.json`, JSON.stringify(data,null,2));
+  if (ok) persistSavedIndicator();
+});
+
+document.getElementById('btnCargar').addEventListener('click', () => document.getElementById('fileInputAvance').click());
+document.getElementById('fileInputAvance').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      restaurarGeneral(data.general);
+      determinaciones = (data.determinaciones || []).map(d => Object.assign(nuevaDet(), d));
+      renderDet();
+      firmas = data.firmas || {};
+      initFirmas();
+      Object.keys(firmas).forEach(key => {
+        const f = firmas[key];
+        document.getElementById('firmaNombre_'+key).value = f.nombre;
+        document.getElementById('firmaRut_'+key).value = f.rut;
+        document.getElementById('firmaNombre_'+key).disabled = true;
+        document.getElementById('firmaRut_'+key).disabled = true;
+        const canvas = document.getElementById('firmaPad_'+key);
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+        img.src = f.imgDataUrl;
+        padCtx[key].hasDrawn = true;
+        const estadoEl = document.getElementById('firmaEstado_'+key);
+        estadoEl.textContent = 'Firmado — ' + fmtFechaHora(f.firmadoAt);
+        estadoEl.className = 'firma-estado firmado';
+        const btnFirmar = document.querySelector(`[data-firmar="${key}"]`);
+        if (btnFirmar) btnFirmar.disabled = true;
+        const btnLimpiar = document.querySelector(`[data-limpiar="${key}"]`);
+        if (btnLimpiar) btnLimpiar.disabled = true;
+      });
+      ROLES.forEach((r,idx) => {
+        if (!firmas[r.key] && idx>0){
+          const prevFirmado = !!firmas[ROLES[idx-1].key];
+          const btn = document.querySelector(`[data-firmar="${r.key}"]`);
+          if (btn) btn.disabled = !prevFirmado;
+        }
+      });
+      persistSavedIndicator('Avance cargado · ' + fmtFechaHora(new Date().toISOString()));
+      calcularTodo();
+    }catch(err){
+      alert('No se pudo leer el archivo de avance: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+// --- QR ---
+function dibujarQR(doc, text, x, y, size, moduleColor){
+  const qr = qrcode(0, 'M');
+  qr.addData(text); qr.make();
+  const count = qr.getModuleCount();
+  const pad = size*0.08;
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(x-pad, y-pad, size+pad*2, size+pad*2, 1.2, 1.2, 'F');
+  const cell = size/count;
+  doc.setFillColor(moduleColor[0], moduleColor[1], moduleColor[2]);
+  for (let r=0;r<count;r++){
+    for (let c=0;c<count;c++){
+      if (qr.isDark(r,c)){
+        doc.rect(x+c*cell, y+r*cell, cell+0.01, cell+0.01, 'F');
+      }
+    }
+  }
+}
+
+// La fuente Helvetica/WinAnsi por defecto de jsPDF no soporta ciertos caracteres Unicode que
+// se ven bien en pantalla (mismo problema encontrado en el piloto de Densidad de Particulas
+// Solidas con ρ y ³) -- se sanean antes de escribirlos en el PDF, dejando la version en
+// pantalla intacta.
+function pdfAsciiSafe(str){
+  return String(str)
+    .replace(/³/g, '3')
+    .replace(/²/g, '2')
+    .replace(/Δ/g, 'diferencia ')
+    .replace(/≤/g, '<=')
+    .replace(/≥/g, '>=')
+    .replace(/ρ/g, 'rho');
+}
+
+// --- PDF "Alternativa C" ---
+function generarPDF(soloProvisorio){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const pageW = 216, pageH = 279, margin = 14;
+  const g = serializarGeneral();
+  const muestra = g.muestra || 'S-N';
+  const anio = new Date().getFullYear();
+  const codigo = `DHF-${anio}-${muestra}`;
+
+  const nivelesFirmados = ROLES.filter(r => firmas[r.key]).length;
+  const validado = !soloProvisorio && nivelesFirmados === ROLES.length;
+  const estadoTxt = validado ? 'Informe validado' : 'Resultado provisorio';
+  const estadoColor = validado ? [0,184,92] : [255,179,0];
+
+  doc.setFillColor(13,21,38); doc.rect(0,0,pageW,26,'F');
+  doc.setFillColor(0,230,118); doc.roundedRect(margin, 7, 12, 12, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('QC', margin+6, 15, {align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(15);
+  doc.text('QCdigital', margin+18, 13);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('MODULO LABORATORIO', margin+18, 18.5);
+  doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Densidad Aparente Hormigon Fresco', pageW-margin, 15, {align:'right'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('Hormigones — NCh 1564.Of2009', pageW-margin, 20, {align:'right'});
+
+  let y = 30;
+  doc.setFillColor(estadoColor[0],estadoColor[1],estadoColor[2]);
+  doc.roundedRect(margin, y, pageW-margin*2, 14, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(estadoTxt, margin+6, y+9);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Codigo: ' + codigo, margin+70, y+9);
+  dibujarQR(doc, `QCDIGITAL-LAB|${codigo}|${estadoTxt}`, pageW-margin-16, y-1, 16, [13,21,38]);
+  y += 20;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2);
+  doc.setFontSize(8.5); doc.setTextColor(60,60,60);
+  const metaRow = (label, val, x) => {
+    doc.setFont('helvetica','bold');
+    const labelTxt = label+':';
+    doc.text(labelTxt, x, y);
+    const labelW = doc.getTextWidth(labelTxt);
+    doc.setFont('helvetica','normal');
+    doc.text(String(val||'-'), x+labelW+2, y);
+  };
+  metaRow('Boleta N°', g.boleta, margin);
+  metaRow('Muestra N°', g.muestra, margin+68);
+  metaRow('Volumen V', (g.volumenV?g.volumenV+' L':'-'), margin+138);
+  y += 6;
+  metaRow('Fecha ensayo', g.fecha, margin);
+  metaRow('Fecha informe', g.fechaInforme, margin+68);
+  metaRow('Empresa', g.empresa, margin+138);
+  y += 8;
+
+  const cards = [
+    ['Densidad aparente', pdfAsciiSafe(document.getElementById('rc_densidad').textContent)],
+    ['Repetibilidad', pdfAsciiSafe(document.getElementById('rc_repetibilidad').textContent)],
+    ['Rendimiento amasada', pdfAsciiSafe(document.getElementById('rc_rendimiento').textContent)],
+    ['Cemento efectivo', pdfAsciiSafe(document.getElementById('rc_cemento').textContent)],
+  ];
+  const cw = (pageW-margin*2-3*4)/4;
+  cards.forEach((c,i) => {
+    const cx = margin + i*(cw+4);
+    doc.setFillColor(17,26,48); doc.roundedRect(cx, y, cw, 20, 2, 2, 'F');
+    doc.setTextColor(154,165,192); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(c[0], cx+4, y+7);
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold');
+    const raw = String(c[1]);
+    let fontSize = 11;
+    doc.setFontSize(fontSize);
+    let valLines = doc.splitTextToSize(raw, cw-8);
+    if (valLines.length > 1){
+      fontSize = 8.5;
+      doc.setFontSize(fontSize);
+      valLines = doc.splitTextToSize(raw, cw-8);
+    }
+    valLines = valLines.slice(0,2);
+    const lineH = fontSize*0.42;
+    const startY = valLines.length>1 ? y+11.5 : y+15;
+    valLines.forEach((ln,li) => { doc.text(ln, cx+4, startY+li*lineH); });
+  });
+  y += 26;
+
+  // Chart image (izquierda) + tabla (derecha)
+  const chartCanvas = document.getElementById('chartDensidad');
+  let chartImg = null;
+  try { chartImg = chartCanvas.toDataURL('image/png'); } catch(e){}
+  const chartH = 62, chartW = 88;
+  if (chartImg){
+    doc.setFillColor(12,20,36); doc.rect(margin, y, chartW, chartH, 'F');
+    doc.addImage(chartImg, 'PNG', margin+2, y+2, chartW-4, chartH-4);
+    doc.setDrawColor(90,102,144); doc.setLineWidth(0.3); doc.rect(margin, y, chartW, chartH);
+  }
+
+  const tableX = margin + chartW + 6;
+  const tableW = pageW - margin - tableX;
+  doc.setFontSize(7.5); doc.setTextColor(20,20,20); doc.setFont('helvetica','bold');
+  doc.text('N', tableX, y+4);
+  doc.text('m1 (kg)', tableX+8, y+4);
+  doc.text('m2 (kg)', tableX+32, y+4);
+  doc.text('D (kg/m3)', tableX+56, y+4);
+  doc.setDrawColor(150,150,150); doc.line(tableX, y+6, tableX+tableW, y+6);
+  let ty = y+11;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(40,40,40);
+  determinaciones.forEach((d, idx) => {
+    if (ty > y + chartH - 2) return;
+    const m1 = parseFloat(d.m1), m2 = parseFloat(d.m2);
+    const V_L = parseFloat(g.volumenV);
+    let dTxt = '-';
+    if (!isNaN(m1) && !isNaN(m2) && !isNaN(V_L) && V_L>0){ dTxt = roundToTen((m2-m1)*1000/V_L)+''; }
+    doc.text(String(idx+1), tableX, ty);
+    doc.text(isNaN(m1)?'-':m1.toFixed(2), tableX+8, ty);
+    doc.text(isNaN(m2)?'-':m2.toFixed(2), tableX+32, ty);
+    doc.text(dTxt, tableX+56, ty);
+    ty += 5.2;
+  });
+  y += chartH + 8;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2); doc.line(margin, y, pageW-margin, y); y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Informacion general', margin, y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  const obraLines = doc.splitTextToSize('Obra / Proyecto: ' + (g.obra||'-'), pageW-margin*2);
+  doc.text(obraLines, margin, y); y += obraLines.length*4.5;
+  doc.text('Lugar de ensayo: ' + (g.direccionObra||'-'), margin, y); y+=5;
+  const compTxt = {vibrador_interno:'Vibrador interno', mesa_vibradora:'Mesa vibradora', varilla_pison:'Varilla-pison manual'}[g.compactacion] || g.compactacion || '-';
+  doc.text(`Compactacion: ${compTxt}   Asentamiento (NCh1019): ${g.asentamiento?g.asentamiento+' cm':'-'}`, margin, y); y+=5;
+  doc.text(`Ensayo realizado por: ${g.responsable||'-'}   Solicitado por: ${g.solicitadoPor||'-'}`, margin, y); y+=5;
+  if (g.observaciones){
+    const obsLines = doc.splitTextToSize('Observaciones: ' + g.observaciones, pageW-margin*2);
+    doc.text(obsLines, margin, y); y += obsLines.length*4.5;
+  }
+  y += 4;
+
+  doc.setDrawColor(42,54,84); doc.line(margin, y, pageW-margin, y); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Firmas', margin, y); y+=5;
+  const fw = (pageW-margin*2-2*6)/3;
+  ROLES.forEach((r,i) => {
+    const fx = margin + i*(fw+6);
+    doc.setDrawColor(180,180,180); doc.rect(fx, y, fw, 28);
+    const f = firmas[r.key];
+    if (f && f.imgDataUrl){
+      try{ doc.addImage(f.imgDataUrl, 'PNG', fx+3, y+2, fw-6, 14); }catch(e){}
+      doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0);
+      doc.text(f.nombre, fx+3, y+20);
+      doc.setFont('helvetica','normal'); doc.text('RUT ' + f.rut, fx+3, y+24);
+      doc.setFontSize(6.5); doc.setTextColor(100,100,100);
+      doc.text(`N° ${codigo}-${r.key.toUpperCase()}`, fx+3, y+27.5);
+    } else {
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Pendiente de firma', fx+fw/2, y+14, {align:'center'});
+    }
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(120,120,120);
+    doc.text(r.label, fx+3, y+ (f? 0 : -2) );
+  });
+  y += 34;
+
+  doc.setFontSize(7); doc.setTextColor(154,165,192);
+  doc.text('QCdigital Laboratorio · Documento generado automaticamente · ' + fmtFechaHora(new Date().toISOString()), margin, pageH-10);
+  doc.text('Codigo de verificacion: ' + codigo, pageW-margin, pageH-10, {align:'right'});
+
+  const fname = `Informe_${codigo}_${validado?'validado':'provisorio'}.pdf`;
+  offerDownload(fname, doc.output('blob'));
+}
+
+document.getElementById('btnPdfProvisorio').addEventListener('click', () => generarPDF(true));
+document.getElementById('btnPdfValidado').addEventListener('click', () => generarPDF(false));
+
+// init
+initFirmas();
+determinaciones.push(nuevaDet());
+renderDet();
+calcularTodo();
+</script>
+</body>
+</html>

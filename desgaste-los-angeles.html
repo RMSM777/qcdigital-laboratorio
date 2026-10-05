@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desgaste de Los Ángeles — QCDigital Laboratorio (Piloto)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0d1526;
+    --navy-2:#141f38;
+    --navy-3:#1a2440;
+    --green:#00e676;
+    --green-dim:#0a4d2e;
+    --amber:#ffb300;
+    --amber-dim:#4d3a00;
+    --red:#ff5252;
+    --red-dim:#4a1414;
+    --text:#e8ecf4;
+    --muted:#8a93a8;
+    --border:#26314f;
+    --bg:#0a0f1c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    padding-bottom:60px;
+  }
+  header.app{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);
+    border-bottom:1px solid var(--border);
+    padding:18px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:12px;
+    position:sticky; top:0; z-index:50;
+  }
+  .wordmark{display:flex; align-items:center; gap:10px;}
+  .wordmark .box{
+    width:38px; height:38px; border-radius:9px;
+    background:var(--green); color:#06210f;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:15px; letter-spacing:-0.5px;
+  }
+  .wordmark .name{font-size:19px; font-weight:700; color:#fff;}
+  .wordmark .name span{color:var(--green);}
+  .pill-tag{
+    background:rgba(0,230,118,0.12); color:var(--green);
+    border:1px solid rgba(0,230,118,0.35);
+    padding:4px 12px; border-radius:999px; font-size:11px;
+    font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+  }
+  .header-right{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .status-indicator{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px;}
+  .status-indicator.dirty{color:var(--amber);}
+  .status-indicator.saved{color:var(--green);}
+  .dot{width:7px; height:7px; border-radius:50%; background:currentColor;}
+
+  main{max-width:1180px; margin:0 auto; padding:24px 20px;}
+  .toolbar{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px;
+    align-items:center;
+  }
+  button{
+    font-family:inherit; cursor:pointer; border:none; border-radius:8px;
+    padding:10px 18px; font-size:13.5px; font-weight:600;
+    transition:filter .15s, transform .05s;
+  }
+  button:active{transform:translateY(1px);}
+  button.primary{background:var(--green); color:#06210f;}
+  button.primary:hover{filter:brightness(1.08);}
+  button.secondary{background:var(--navy-3); color:var(--text); border:1px solid var(--border);}
+  button.secondary:hover{filter:brightness(1.2);}
+  button.ghost{background:transparent; color:var(--muted); border:1px solid var(--border);}
+  button.danger{background:var(--red-dim); color:#ffb3b3; border:1px solid rgba(255,82,82,0.4);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+
+  .card{
+    background:var(--navy-3); border:1px solid var(--border); border-radius:14px;
+    padding:22px 24px; margin-bottom:20px;
+  }
+  .card h2{
+    font-size:15px; margin:0 0 4px 0; color:#fff;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card h2 .num{
+    width:22px; height:22px; border-radius:6px; background:var(--green);
+    color:#06210f; font-size:12px; font-weight:800;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .card .sub{font-size:12px; color:var(--muted); margin:0 0 18px 0;}
+
+  .grid{display:grid; gap:14px;}
+  .grid.cols-2{grid-template-columns:repeat(2,1fr);}
+  .grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:760px){.grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr;}}
+
+  label{display:block; font-size:11.5px; color:var(--muted); margin-bottom:5px; font-weight:600; text-transform:uppercase; letter-spacing:0.03em;}
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    width:100%; background:var(--navy); border:1px solid var(--border); border-radius:8px;
+    padding:9px 11px; color:var(--text); font-size:13.5px; font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--green);}
+  textarea{resize:vertical; min-height:64px;}
+  .field{margin-bottom:2px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em;
+    color:var(--muted); padding:8px 10px; border-bottom:1px solid var(--border);
+  }
+  td{padding:7px 10px; border-bottom:1px solid rgba(38,49,79,0.5); vertical-align:middle;}
+  td input{padding:6px 8px; font-size:13px;}
+  tr:last-child td{border-bottom:none;}
+
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+    border-radius:999px; font-size:11px; font-weight:700;
+  }
+  .badge.ok{background:rgba(0,230,118,0.12); color:var(--green);}
+  .badge.warn{background:rgba(255,179,0,0.12); color:var(--amber);}
+  .badge.bad{background:rgba(255,82,82,0.12); color:var(--red);}
+  .badge.neutral{background:rgba(138,147,168,0.12); color:var(--muted);}
+
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
+  .chip{
+    background:var(--navy); border:1px solid var(--border); border-radius:8px;
+    padding:8px 12px; font-size:12px; color:var(--muted); min-width:120px;
+  }
+  .chip b{display:block; color:var(--text); font-size:15px; margin-top:2px;}
+
+  .result-cards{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:6px;}
+  @media(max-width:760px){.result-cards{grid-template-columns:repeat(2,1fr);}}
+  .result-card{
+    background:var(--navy); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px;
+  }
+  .result-card .lbl{font-size:10.5px; text-transform:uppercase; color:var(--muted); letter-spacing:0.04em;}
+  .result-card .val{font-size:22px; font-weight:800; margin-top:4px; color:var(--green);}
+  .result-card .val.bad{color:var(--red);}
+  .result-card .val.amber{color:var(--amber);}
+
+  .chart-wrap{height:280px; margin-top:10px;}
+
+  .firma-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:900px){.firma-grid{grid-template-columns:1fr;}}
+  .firma-card{
+    background:var(--navy); border:1px solid var(--border); border-radius:12px; padding:16px;
+  }
+  .firma-card.signed{border-color:rgba(0,230,118,0.4);}
+  .firma-card h3{margin:0 0 3px 0; font-size:13.5px; color:#fff;}
+  .firma-card .role-desc{font-size:11px; color:var(--muted); margin-bottom:12px;}
+  canvas.pad{
+    width:100%; height:110px; background:#fff; border-radius:8px; touch-action:none;
+    cursor:crosshair;
+  }
+  .firma-actions{display:flex; gap:8px; margin-top:8px;}
+  .firma-actions button{flex:1; padding:8px; font-size:12px;}
+  .firma-preview{text-align:center;}
+  .firma-preview img{max-height:70px; background:#fff; border-radius:6px; padding:4px;}
+  .firma-meta{font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.5;}
+  .firma-meta b{color:var(--text);}
+
+  .radio-row{display:flex; flex-direction:column; gap:8px;}
+  .radio-opt{
+    display:flex; align-items:center; gap:8px; background:var(--navy);
+    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:13px;
+    cursor:pointer;
+  }
+  .radio-opt input{width:auto;}
+  .radio-opt.custom{align-items:center;}
+  .radio-opt.custom input[type=number]{width:90px; margin-left:8px;}
+
+  .note{font-size:11.5px; color:var(--muted); background:rgba(255,179,0,0.06); border:1px solid rgba(255,179,0,0.25); border-radius:8px; padding:10px 12px; margin-top:14px; line-height:1.5;}
+  .note b{color:var(--amber);}
+
+  footer.app{text-align:center; color:var(--muted); font-size:11.5px; padding:20px; max-width:1180px; margin:0 auto;}
+
+  #fileInputAvance{display:none;}
+</style>
+</head>
+<body><div id="qcdLabBar" style="position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;background:#0d1526;color:#fff;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:9px 14px;padding-top:calc(9px + env(safe-area-inset-top));border-bottom:2px solid #f5851f"><a href="../index.html#ensayos" style="color:#fff;text-decoration:none">&#8249; Laboratorio</a><span style="flex:1;text-align:center;opacity:.8;font-weight:500">Desgaste mediante la máquina de Los Ángeles</span><a href="../documento.html?c=PTE-AR-06" style="color:#f5851f;text-decoration:none">Ver PTE</a></div>
+
+<header class="app">
+  <div class="wordmark">
+    <div class="box">QC</div>
+    <div class="name">QC<span>digital</span></div>
+    <div class="pill-tag">Módulo Laboratorio</div>
+  </div>
+  <div class="header-right">
+    <span id="statusIndicator" class="status-indicator"><span class="dot"></span><span id="statusText">Sin cambios</span></span>
+  </div>
+</header>
+
+<main>
+  <div style="margin-bottom:18px;">
+    <h1 style="font-size:22px; margin:0 0 4px 0;">Desgaste de Los Ángeles</h1>
+    <div style="font-size:12.5px; color:var(--muted);">Geotecnia / Suelos · NCh 1369 (equivalente ASTM C131 / C535, AASHTO T96) · Piloto de captura → cálculo → informe PDF</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" onclick="guardarAvance()">💾 Guardar avance</button>
+    <button class="secondary" onclick="document.getElementById('fileInputAvance').click()">📂 Cargar avance</button>
+    <input type="file" id="fileInputAvance" accept="application/json" onchange="cargarAvance(event)">
+    <button class="secondary" onclick="generarPDF()">📄 Generar informe PDF</button>
+    <div style="flex:1;"></div>
+    <span id="codigoPreview" style="font-size:11.5px; color:var(--muted);"></span>
+  </div>
+
+  <!-- 1. INFORMACIÓN GENERAL -->
+  <div class="card">
+    <h2><span class="num">1</span>Información general</h2>
+    <p class="sub">Datos de la boleta, muestra, empresa solicitante y obra.</p>
+    <div class="grid cols-4">
+      <div class="field"><label>Boleta N°</label><input type="text" id="g_boleta" oninput="markDirty()"></div>
+      <div class="field"><label>Muestra N°</label><input type="text" id="g_muestra" oninput="markDirty()"></div>
+      <div class="field"><label>Fecha de recepción</label><input type="date" id="g_fechaRecepcion" oninput="markDirty()"></div>
+      <div class="field"><label>Fecha de ensayo</label><input type="date" id="g_fechaEnsayo" oninput="markDirty()"></div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="field"><label>Empresa solicitante</label><input type="text" id="g_empresa" oninput="markDirty()"></div>
+      <div class="field"><label>RUT empresa</label><input type="text" id="g_rutEmpresa" oninput="markDirty()"></div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="field"><label>Obra / Proyecto</label><input type="text" id="g_obra" oninput="markDirty()"></div>
+      <div class="field"><label>Ubicación de la obra</label><input type="text" id="g_direccionObra" oninput="markDirty()"></div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="field"><label>Material ensayado</label><input type="text" id="g_material" placeholder="Ej: Grava chancada" oninput="markDirty()"></div>
+      <div class="field"><label>Procedencia / cantera</label><input type="text" id="g_procedencia" oninput="markDirty()"></div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="field"><label>Solicitado por</label><input type="text" id="g_solicitadoPor" oninput="markDirty()"></div>
+      <div class="field"><label>Área / Ensayo</label><input type="text" id="g_area" value="Geotecnia / Suelos — Desgaste de Los Ángeles" disabled></div>
+    </div>
+  </div>
+
+  <!-- 2. GRADUACIÓN Y FRACCIONES -->
+  <div class="card">
+    <h2><span class="num">2</span>Graduación de la muestra y fracciones pesadas</h2>
+    <p class="sub">Selecciona la graduación que más se aproxima a la granulometría original del árido (NCh 1369 / ASTM C131) y registra la masa efectivamente pesada de cada fracción.</p>
+    <div class="grid cols-2">
+      <div class="field">
+        <label>Graduación</label>
+        <select id="g_graduacion" onchange="onGraduacionChange()"></select>
+      </div>
+      <div class="field">
+        <label>N° de revoluciones aplicadas (por defecto según graduación)</label>
+        <input type="number" id="g_revolucionesDefault" oninput="markDirty()">
+      </div>
+    </div>
+    <div class="chips" id="chipsGraduacion"></div>
+
+    <table style="margin-top:16px;">
+      <thead>
+        <tr><th>Fracción (tamices)</th><th>Masa nominal (g)</th><th>Tolerancia (±g)</th><th>Masa pesada (g)</th><th>Estado</th></tr>
+      </thead>
+      <tbody id="tbodyFracciones"></tbody>
+      <tfoot>
+        <tr>
+          <td style="font-weight:700;">Total</td>
+          <td id="fracTotalNominal" style="font-weight:700;">—</td>
+          <td>—</td>
+          <td id="fracTotalPesada" style="font-weight:700;">—</td>
+          <td id="fracTotalBadge">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- 3. DETERMINACIONES -->
+  <div class="card">
+    <h2><span class="num">3</span>Determinaciones — masa retenida en tamiz N°12 (1,70 mm)</h2>
+    <p class="sub">Al finalizar las revoluciones en la máquina de Los Ángeles, la muestra se tamiza por el tamiz N°12 (1,70 mm); el material retenido se lava, seca y pesa. % Desgaste = (Masa inicial − Masa retenida) / Masa inicial × 100.</p>
+    <label style="display:flex; align-items:center; gap:8px; margin-bottom:14px; cursor:pointer;">
+      <input type="checkbox" id="g_segundaDet" style="width:auto;" onchange="onSegundaDetChange()"> Realizar segunda determinación (duplicado)
+    </label>
+    <div class="grid cols-2" id="determinacionesWrap"></div>
+    <div id="consistenciaBadgeWrap" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- 4. EXIGENCIA Y RESULTADO -->
+  <div class="card">
+    <h2><span class="num">4</span>Exigencia y resultado</h2>
+    <p class="sub">Referencia habitual NCh 163 para árido grueso destinado a hormigón: desgaste máximo 40% si el hormigón está sometido a desgaste, 50% para todo otro hormigón. Ajusta según la especificación del proyecto.</p>
+    <div class="radio-row" id="exigenciaOpts"></div>
+
+    <div class="result-cards" style="margin-top:18px;">
+      <div class="result-card">
+        <div class="lbl">Graduación utilizada</div>
+        <div class="val" id="rc_graduacion" style="font-size:20px;">—</div>
+      </div>
+      <div class="result-card">
+        <div class="lbl">% Desgaste (resultado)</div>
+        <div class="val" id="rc_desgaste">—</div>
+      </div>
+      <div class="result-card">
+        <div class="lbl">N° revoluciones</div>
+        <div class="val" id="rc_revoluciones" style="font-size:20px;">—</div>
+      </div>
+      <div class="result-card">
+        <div class="lbl">Cumplimiento</div>
+        <div class="val" id="rc_cumple" style="font-size:18px;">—</div>
+      </div>
+    </div>
+
+    <div style="font-size:11px; color:var(--muted); margin:2px 0 6px 0;">Barras = % desgaste por determinación (verde = cumple, rojo = no cumple) · línea punteada ámbar = exigencia</div>
+    <div class="chart-wrap"><canvas id="chartDesgaste"></canvas></div>
+  </div>
+
+  <!-- 5. OBSERVACIONES -->
+  <div class="card">
+    <h2><span class="num">5</span>Observaciones</h2>
+    <textarea id="g_observaciones" placeholder="Observaciones del ensayo, condiciones de la muestra, etc." oninput="markDirty()"></textarea>
+    <div class="note">
+      <b>Nota de piloto:</b> el formato oficial de laboratorio para este ensayo (<i>FORMATO DESGASTE DE LOS ANGELES.pdf</i> y <i>FORMATO GRANULOMETRÍA DESGASTE DE LOS ANGELES.pdf</i>) está cargado en el proyecto como escaneo sin texto extraíble, por lo que este prototipo se construyó directamente sobre el método estándar NCh 1369 / ASTM C131-C535 (tabla de graduaciones A–D, cálculo de % desgaste sobre el tamiz N°12) en vez de replicar el formulario exacto — igual que se hizo con el piloto de CBR. Conviene que el equipo de suelos confirme que los nombres de campos, redondeos y la tolerancia de consistencia entre determinaciones (2%, valor informativo usado en este piloto) calzan con la planilla que usan hoy antes de tomarlo como plantilla definitiva. Este piloto cubre las graduaciones A–D (áridos hasta 37,5 mm); las graduaciones para árido grueso mayor (E–G / NCh 1369 fracción gruesa) no están implementadas todavía.
+    </div>
+  </div>
+
+  <!-- 6. FIRMAS -->
+  <div class="card">
+    <h2><span class="num">6</span>Firmas — flujo de 3 niveles</h2>
+    <p class="sub">El técnico firma primero, luego el revisor, luego el validador (firma oficial). Cada nivel queda habilitado solo después del anterior.</p>
+    <div class="firma-grid" id="firmaGrid"></div>
+  </div>
+
+</main>
+
+<footer class="app">QCDigital Laboratorio — Prototipo de piloto. Firma manuscrita solo para probar el flujo visual; no constituye firma electrónica con validez legal.</footer>
+
+<script>
+/* ============================================================
+   CONFIGURACIÓN — GRADUACIONES NCh 1369 / ASTM C131-C535
+   ============================================================ */
+const GRADUACIONES = {
+  A: {
+    label: 'A — 37,5 a 9,5 mm',
+    fracciones: [
+      {key:'37.5-25', label:'Pasa 37,5 mm — Retiene 25 mm', nominal:1250, tol:25},
+      {key:'25-19',   label:'Pasa 25 mm — Retiene 19 mm',   nominal:1250, tol:25},
+      {key:'19-12.5', label:'Pasa 19 mm — Retiene 12,5 mm', nominal:1250, tol:25},
+      {key:'12.5-9.5',label:'Pasa 12,5 mm — Retiene 9,5 mm',nominal:1250, tol:25},
+    ],
+    esferas:12, cargaNominal:5000, cargaTol:25, revoluciones:500
+  },
+  B: {
+    label: 'B — 19 a 9,5 mm',
+    fracciones: [
+      {key:'19-12.5', label:'Pasa 19 mm — Retiene 12,5 mm', nominal:2500, tol:10},
+      {key:'12.5-9.5',label:'Pasa 12,5 mm — Retiene 9,5 mm',nominal:2500, tol:10},
+    ],
+    esferas:11, cargaNominal:4584, cargaTol:25, revoluciones:500
+  },
+  C: {
+    label: 'C — 9,5 a 4,75 mm',
+    fracciones: [
+      {key:'9.5-6.3', label:'Pasa 9,5 mm — Retiene 6,3 mm', nominal:2500, tol:10},
+      {key:'6.3-4.75',label:'Pasa 6,3 mm — Retiene 4,75 mm',nominal:2500, tol:10},
+    ],
+    esferas:8, cargaNominal:3330, cargaTol:20, revoluciones:500
+  },
+  D: {
+    label: 'D — 4,75 a 2,36 mm',
+    fracciones: [
+      {key:'4.75-2.36', label:'Pasa 4,75 mm — Retiene 2,36 mm', nominal:5000, tol:10},
+    ],
+    esferas:6, cargaNominal:2500, cargaTol:15, revoluciones:500
+  }
+};
+
+const ROLES = [
+  {key:'tecnico',   label:'Técnico de laboratorio', desc:'Nivel 1 — captura y calcula los resultados'},
+  {key:'revisor',   label:'Revisor',                desc:'Nivel 2 — filtra cálculos y datos de la empresa'},
+  {key:'validador', label:'Validador',               desc:'Nivel 3 — firma oficial que valida el informe'}
+];
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let dirty = false;
+let lastSavedAt = null;
+let chartInstance = null;
+const signaturePads = {};
+
+function fmtFechaHora(d){
+  d = d ? new Date(d) : new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function markDirty(){
+  dirty = true;
+  const el = document.getElementById('statusIndicator');
+  el.className = 'status-indicator dirty';
+  document.getElementById('statusText').textContent = 'Cambios sin guardar';
+  calcularTodo();
+}
+
+/* ============================================================
+   RENDER: graduación / fracciones
+   ============================================================ */
+function initGraduacionSelect(){
+  const sel = document.getElementById('g_graduacion');
+  sel.innerHTML = Object.keys(GRADUACIONES).map(k =>
+    `<option value="${k}">${k} — ${GRADUACIONES[k].label}</option>`).join('');
+  sel.value = 'B';
+}
+
+function onGraduacionChange(){
+  const g = GRADUACIONES[document.getElementById('g_graduacion').value];
+  document.getElementById('g_revolucionesDefault').value = g.revoluciones;
+  renderFracciones();
+  renderChips();
+  renderDeterminaciones();
+  markDirty();
+}
+
+function renderChips(){
+  const key = document.getElementById('g_graduacion').value;
+  const g = GRADUACIONES[key];
+  document.getElementById('chipsGraduacion').innerHTML = `
+    <div class="chip">N° de esferas<b>${g.esferas}</b></div>
+    <div class="chip">Carga abrasiva nominal<b>${g.cargaNominal} ± ${g.cargaTol} g</b></div>
+    <div class="chip">N° de revoluciones<b>${g.revoluciones}</b></div>
+  `;
+}
+
+function renderFracciones(){
+  const key = document.getElementById('g_graduacion').value;
+  const g = GRADUACIONES[key];
+  const tbody = document.getElementById('tbodyFracciones');
+  tbody.innerHTML = g.fracciones.map(f => `
+    <tr>
+      <td>${f.label}</td>
+      <td>${f.nominal.toLocaleString('es-CL')}</td>
+      <td>${f.tol}</td>
+      <td><input type="number" step="1" id="frac_${f.key}" oninput="markDirty()"></td>
+      <td id="fracBadge_${f.key}"><span class="badge neutral">Pendiente</span></td>
+    </tr>
+  `).join('');
+}
+
+/* ============================================================
+   RENDER: determinaciones
+   ============================================================ */
+function renderDeterminaciones(){
+  const segunda = document.getElementById('g_segundaDet').checked;
+  const n = segunda ? 2 : 1;
+  const g = GRADUACIONES[document.getElementById('g_graduacion').value];
+  const revDefault = document.getElementById('g_revolucionesDefault').value || g.revoluciones;
+  // Preservar valores ya ingresados al reconstruir el bloque (ej. al activar/desactivar el duplicado)
+  const previo = {};
+  for(let i=1;i<=2;i++){
+    const mi = document.getElementById(`det${i}_masaInicial`);
+    const mr = document.getElementById(`det${i}_masaRetenida`);
+    const rv = document.getElementById(`det${i}_revoluciones`);
+    if(mi || mr || rv){ previo[i] = {masaInicial:mi?.value||'', masaRetenida:mr?.value||'', revoluciones:rv?.value||''}; }
+  }
+  let html = '';
+  for(let i=1;i<=n;i++){
+    html += `
+    <div class="firma-card" style="background:var(--navy);">
+      <h3 style="margin-bottom:10px;">Determinación ${i}</h3>
+      <div class="grid cols-2" style="margin-bottom:10px;">
+        <div class="field">
+          <label>Masa inicial (g)</label>
+          <input type="number" step="1" id="det${i}_masaInicial" oninput="markDirty()">
+        </div>
+        <div class="field">
+          <label>N° revoluciones</label>
+          <input type="number" step="1" id="det${i}_revoluciones" value="${revDefault}" oninput="markDirty()">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:10px;">
+        <label>Masa retenida tamiz N°12 — 1,70 mm (g)</label>
+        <input type="number" step="1" id="det${i}_masaRetenida" oninput="markDirty()">
+      </div>
+      <button class="ghost" style="width:100%; margin-bottom:10px; font-size:11.5px;" onclick="usarMasaPesada(${i})">Usar masa total pesada de fracciones</button>
+      <div class="chips">
+        <div class="chip" style="flex:1;">% Desgaste<b id="det${i}_resultado">—</b></div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('determinacionesWrap').innerHTML = html;
+  Object.keys(previo).forEach(i=>{
+    if(Number(i) > n) return;
+    s_val(`det${i}_masaInicial`, previo[i].masaInicial);
+    s_val(`det${i}_masaRetenida`, previo[i].masaRetenida);
+    if(previo[i].revoluciones) s_val(`det${i}_revoluciones`, previo[i].revoluciones);
+  });
+}
+
+function onSegundaDetChange(){
+  renderDeterminaciones();
+  markDirty();
+}
+
+function usarMasaPesada(i){
+  const total = sumaFraccionesPesadas();
+  document.getElementById(`det${i}_masaInicial`).value = total || '';
+  markDirty();
+}
+
+function sumaFraccionesPesadas(){
+  const key = document.getElementById('g_graduacion').value;
+  const g = GRADUACIONES[key];
+  let total = 0;
+  g.fracciones.forEach(f=>{
+    const el = document.getElementById('frac_'+f.key);
+    total += parseFloat(el?.value) || 0;
+  });
+  return total;
+}
+
+/* ============================================================
+   EXIGENCIA
+   ============================================================ */
+function renderExigenciaOpts(){
+  document.getElementById('exigenciaOpts').innerHTML = `
+    <label class="radio-opt"><input type="radio" name="exigencia" value="40" checked onchange="markDirty()"> Árido para hormigón sometido a desgaste — máx. <b>40%</b> (NCh 163)</label>
+    <label class="radio-opt"><input type="radio" name="exigencia" value="50" onchange="markDirty()"> Árido para todo otro hormigón — máx. <b>50%</b> (NCh 163)</label>
+    <label class="radio-opt custom"><input type="radio" name="exigencia" value="custom" onchange="markDirty()"> Personalizada
+      <input type="number" id="exigenciaCustom" placeholder="%" oninput="if(document.querySelector('input[name=exigencia][value=custom]')){document.querySelector('input[name=exigencia][value=custom]').checked=true;} markDirty()">
+    </label>
+  `;
+}
+
+function getExigenciaValor(){
+  const sel = document.querySelector('input[name=exigencia]:checked');
+  if(!sel) return 40;
+  if(sel.value === 'custom'){
+    return parseFloat(document.getElementById('exigenciaCustom').value) || 0;
+  }
+  return parseFloat(sel.value);
+}
+
+/* ============================================================
+   MOTOR DE CÁLCULO
+   ============================================================ */
+function calcularTodo(){
+  const gradKey = document.getElementById('g_graduacion').value;
+  const g = GRADUACIONES[gradKey];
+
+  // --- Fracciones ---
+  let totalPesada = 0, totalNominal = 0, totalTolSum = 0, fueraDeTolerancia = false;
+  g.fracciones.forEach(f=>{
+    const el = document.getElementById('frac_'+f.key);
+    const val = parseFloat(el?.value) || 0;
+    totalPesada += val;
+    totalNominal += f.nominal;
+    totalTolSum += f.tol;
+    const badgeEl = document.getElementById('fracBadge_'+f.key);
+    if(!badgeEl) return;
+    if(!el.value){
+      badgeEl.innerHTML = '<span class="badge neutral">Pendiente</span>';
+    } else if(Math.abs(val - f.nominal) <= f.tol){
+      badgeEl.innerHTML = '<span class="badge ok">OK</span>';
+    } else {
+      badgeEl.innerHTML = '<span class="badge bad">Fuera de tolerancia</span>';
+      fueraDeTolerancia = true;
+    }
+  });
+  document.getElementById('fracTotalNominal').textContent = totalNominal.toLocaleString('es-CL') + ' g';
+  document.getElementById('fracTotalPesada').textContent = (totalPesada ? totalPesada.toLocaleString('es-CL') : '—') + (totalPesada ? ' g' : '');
+  const fracBadgeEl = document.getElementById('fracTotalBadge');
+  if(totalPesada === 0){
+    fracBadgeEl.innerHTML = '<span class="badge neutral">Pendiente</span>';
+  } else if(Math.abs(totalPesada - totalNominal) <= totalTolSum && !fueraDeTolerancia){
+    fracBadgeEl.innerHTML = '<span class="badge ok">OK</span>';
+  } else {
+    fracBadgeEl.innerHTML = '<span class="badge warn">Revisar</span>';
+  }
+
+  // --- Determinaciones ---
+  const segunda = document.getElementById('g_segundaDet').checked;
+  const n = segunda ? 2 : 1;
+  const resultados = [];
+  for(let i=1;i<=n;i++){
+    const masaInicial = parseFloat(document.getElementById(`det${i}_masaInicial`)?.value) || 0;
+    const masaRetenida = parseFloat(document.getElementById(`det${i}_masaRetenida`)?.value) || 0;
+    const resEl = document.getElementById(`det${i}_resultado`);
+    if(masaInicial > 0 && document.getElementById(`det${i}_masaRetenida`).value !== ''){
+      const desgaste = (masaInicial - masaRetenida) / masaInicial * 100;
+      resultados.push(desgaste);
+      if(resEl) resEl.textContent = desgaste.toFixed(1) + '%';
+    } else {
+      if(resEl) resEl.textContent = '—';
+    }
+  }
+
+  // --- Consistencia entre determinaciones ---
+  const consistWrap = document.getElementById('consistenciaBadgeWrap');
+  if(resultados.length === 2){
+    const dif = Math.abs(resultados[0] - resultados[1]);
+    if(dif <= 2){
+      consistWrap.innerHTML = `<span class="badge ok">Diferencia entre determinaciones: ${dif.toFixed(2)} pp — consistente (≤ 2%, valor informativo)</span>`;
+    } else {
+      consistWrap.innerHTML = `<span class="badge bad">Diferencia entre determinaciones: ${dif.toFixed(2)} pp — revisar, supera 2% (valor informativo)</span>`;
+    }
+  } else {
+    consistWrap.innerHTML = '';
+  }
+
+  // --- Resultado final ---
+  const resultadoFinal = resultados.length ? (resultados.reduce((a,b)=>a+b,0) / resultados.length) : null;
+  const exigencia = getExigenciaValor();
+  const cumple = resultadoFinal !== null ? (resultadoFinal <= exigencia) : null;
+
+  document.getElementById('rc_graduacion').textContent = gradKey;
+  document.getElementById('rc_revoluciones').textContent = document.getElementById('g_revolucionesDefault').value || g.revoluciones;
+
+  const rcDesgasteEl = document.getElementById('rc_desgaste');
+  const rcCumpleEl = document.getElementById('rc_cumple');
+  if(resultadoFinal !== null){
+    rcDesgasteEl.textContent = resultadoFinal.toFixed(1) + '%';
+    rcDesgasteEl.className = 'val' + (cumple ? '' : ' bad');
+    rcCumpleEl.textContent = cumple ? 'Cumple' : 'No cumple';
+    rcCumpleEl.className = 'val' + (cumple ? '' : ' bad');
+  } else {
+    rcDesgasteEl.textContent = '—'; rcDesgasteEl.className = 'val';
+    rcCumpleEl.textContent = '—'; rcCumpleEl.className = 'val';
+  }
+
+  actualizarChart(resultados, exigencia, cumple);
+  actualizarCodigoPreview();
+
+  return {gradKey, g, totalPesada, totalNominal, resultados, resultadoFinal, exigencia, cumple,
+          revoluciones: document.getElementById('g_revolucionesDefault').value || g.revoluciones};
+}
+
+function actualizarChart(resultados, exigencia, cumple){
+  const ctx = document.getElementById('chartDesgaste');
+  const labels = resultados.map((_,i)=>`Determinación ${i+1}`);
+  const colors = resultados.map(r => r <= exigencia ? '#00e676' : '#ff5252');
+  if(chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels.length ? labels : ['Sin datos'],
+      datasets: [
+        {
+          type:'bar', label:'% Desgaste',
+          data: resultados.length ? resultados : [0],
+          backgroundColor: colors.length ? colors : ['#26314f'],
+          borderRadius: 6, barThickness: 60
+        },
+        {
+          type:'line', label:`Exigencia (${exigencia}%)`,
+          data: (resultados.length ? resultados : [0]).map(()=>exigencia),
+          borderColor:'#ffb300', borderDash:[6,4], borderWidth:2,
+          pointRadius:0, fill:false
+        }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:false,
+      scales:{
+        y:{ beginAtZero:true, suggestedMax: Math.max(exigencia,...resultados,10)+10,
+            ticks:{color:'#8a93a8'}, grid:{color:'#26314f'} },
+        x:{ ticks:{color:'#8a93a8'}, grid:{display:false} }
+      },
+      plugins:{ legend:{ display:false } }
+    }
+  });
+}
+
+function actualizarCodigoPreview(){
+  const muestra = document.getElementById('g_muestra').value || '____';
+  const anio = new Date().getFullYear();
+  document.getElementById('codigoPreview').textContent = `Código: LA-${anio}-${muestra}`;
+}
+
+/* ============================================================
+   FIRMAS
+   ============================================================ */
+function attachSignaturePad(canvas){
+  const ctx = canvas.getContext('2d');
+  function resize(){
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#0d1526';
+  }
+  resize();
+  let drawing = false, hasInk = false;
+  function pos(e){
+    const rect = canvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return {x: p.clientX - rect.left, y: p.clientY - rect.top};
+  }
+  function start(e){ drawing = true; hasInk = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+  function move(e){ if(!drawing) return; const p = pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ drawing = false; }
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+  return {
+    clear(){ ctx.clearRect(0,0,canvas.width,canvas.height); hasInk = false; },
+    isEmpty(){ return !hasInk; },
+    toDataURL(){ return canvas.toDataURL('image/png'); }
+  };
+}
+
+const firmasState = {}; // { tecnico: {nombre,rut,imagen,firmadoAt} | null, ... }
+
+function renderFirmaGrid(){
+  const wrap = document.getElementById('firmaGrid');
+  wrap.innerHTML = ROLES.map(r => `
+    <div class="firma-card" id="firmaCard_${r.key}">
+      <h3>${r.label}</h3>
+      <div class="role-desc">${r.desc}</div>
+      <div id="firmaBody_${r.key}"></div>
+    </div>
+  `).join('');
+  ROLES.forEach(r => renderFirmaBody(r.key));
+}
+
+function puedeFirmar(key){
+  const idx = ROLES.findIndex(r=>r.key===key);
+  if(idx === 0) return true;
+  const prev = ROLES[idx-1].key;
+  return !!firmasState[prev];
+}
+
+function renderFirmaBody(key){
+  const body = document.getElementById('firmaBody_'+key);
+  const card = document.getElementById('firmaCard_'+key);
+  const firma = firmasState[key];
+  if(firma){
+    card.classList.add('signed');
+    body.innerHTML = `
+      <div class="firma-preview"><img src="${firma.imagen}" alt="firma"></div>
+      <div class="firma-meta">
+        <div><b>${firma.nombre}</b></div>
+        <div>RUT: ${firma.rut}</div>
+        <div>Firmado: ${fmtFechaHora(firma.firmadoAt)}</div>
+      </div>
+      <div class="firma-actions">
+        <button class="danger" onclick="deshacerFirma('${key}')">Deshacer firma</button>
+      </div>
+    `;
+    return;
+  }
+  card.classList.remove('signed');
+  const habilitado = puedeFirmar(key);
+  if(!habilitado){
+    body.innerHTML = `<div class="firma-meta" style="text-align:center; padding:20px 0;">Se habilita después de la firma anterior.</div>`;
+    return;
+  }
+  body.innerHTML = `
+    <div class="field" style="margin-bottom:8px;"><label>Nombre</label><input type="text" id="firmaNombre_${key}"></div>
+    <div class="field" style="margin-bottom:10px;"><label>RUT</label><input type="text" id="firmaRut_${key}"></div>
+    <canvas class="pad" id="firmaPad_${key}"></canvas>
+    <div class="firma-actions">
+      <button class="ghost" onclick="limpiarFirma('${key}')">Limpiar</button>
+      <button class="primary" onclick="firmarRol('${key}')">Firmar</button>
+    </div>
+  `;
+  signaturePads[key] = attachSignaturePad(document.getElementById('firmaPad_'+key));
+}
+
+function limpiarFirma(key){
+  signaturePads[key]?.clear();
+}
+
+function firmarRol(key){
+  const nombre = document.getElementById('firmaNombre_'+key).value.trim();
+  const rut = document.getElementById('firmaRut_'+key).value.trim();
+  const pad = signaturePads[key];
+  if(!nombre || !rut){ alert('Ingresa nombre y RUT antes de firmar.'); return; }
+  if(!pad || pad.isEmpty()){ alert('Dibuja la firma antes de continuar.'); return; }
+  firmasState[key] = { nombre, rut, imagen: pad.toDataURL(), firmadoAt: new Date().toISOString() };
+  renderFirmaGrid();
+  markDirty();
+}
+
+function deshacerFirma(key){
+  if(!confirm('¿Deshacer esta firma? También se perderán las firmas posteriores si existen.')) return;
+  const idx = ROLES.findIndex(r=>r.key===key);
+  for(let i=idx;i<ROLES.length;i++){ delete firmasState[ROLES[i].key]; }
+  renderFirmaGrid();
+  markDirty();
+}
+
+function estadoDocumento(){
+  if(firmasState.validador) return {texto:'Informe validado', color:'#00e676', dark:'#06210f'};
+  if(firmasState.tecnico) return {texto:'Resultado provisorio', color:'#ffb300', dark:'#241a00'};
+  return {texto:'Borrador', color:'#8a93a8', dark:'#0d1526'};
+}
+
+/* ============================================================
+   QR — dibujado directamente en el PDF (sin dependencias de imagen)
+   ============================================================ */
+function dibujarQR(doc, text, x, y, size, moduleColor){
+  const qr = qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  const count = qr.getModuleCount();
+  const pad = size * 0.08;
+  const cell = (size - 2*pad) / count;
+  // Fondo blanco con margen (quiet zone) para que el QR sea escaneable sobre cualquier color de listón.
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(x, y, size, size, 1.2, 1.2, 'F');
+  doc.setFillColor(...(moduleColor || [13,21,38]));
+  for(let r=0;r<count;r++){
+    for(let c=0;c<count;c++){
+      if(qr.isDark(r,c)){
+        doc.rect(x + pad + c*cell, y + pad + r*cell, cell, cell, 'F');
+      }
+    }
+  }
+}
+
+/* ============================================================
+   GUARDAR / CARGAR AVANCE
+   ============================================================ */
+function recolectarEstado(){
+  const gradKey = document.getElementById('g_graduacion').value;
+  const g = GRADUACIONES[gradKey];
+  const fracciones = {};
+  g.fracciones.forEach(f=>{
+    fracciones[f.key] = document.getElementById('frac_'+f.key)?.value || '';
+  });
+  const segunda = document.getElementById('g_segundaDet').checked;
+  const n = segunda ? 2 : 1;
+  const determinaciones = [];
+  for(let i=1;i<=n;i++){
+    determinaciones.push({
+      masaInicial: document.getElementById(`det${i}_masaInicial`)?.value || '',
+      masaRetenida: document.getElementById(`det${i}_masaRetenida`)?.value || '',
+      revoluciones: document.getElementById(`det${i}_revoluciones`)?.value || ''
+    });
+  }
+  const exigenciaSel = document.querySelector('input[name=exigencia]:checked')?.value || '40';
+  return {
+    version: 1,
+    tipo: 'desgaste-los-angeles',
+    general: {
+      boleta: g_val('g_boleta'), muestra: g_val('g_muestra'),
+      fechaRecepcion: g_val('g_fechaRecepcion'), fechaEnsayo: g_val('g_fechaEnsayo'),
+      empresa: g_val('g_empresa'), rutEmpresa: g_val('g_rutEmpresa'),
+      obra: g_val('g_obra'), direccionObra: g_val('g_direccionObra'),
+      material: g_val('g_material'), procedencia: g_val('g_procedencia'),
+      solicitadoPor: g_val('g_solicitadoPor')
+    },
+    graduacion: gradKey,
+    revolucionesDefault: g_val('g_revolucionesDefault'),
+    fracciones,
+    segundaDet: segunda,
+    determinaciones,
+    exigenciaSel,
+    exigenciaCustom: g_val('exigenciaCustom'),
+    observaciones: g_val('g_observaciones'),
+    firmas: firmasState
+  };
+}
+
+function g_val(id){ return document.getElementById(id)?.value ?? ''; }
+function s_val(id,val){ const el = document.getElementById(id); if(el) el.value = val ?? ''; }
+
+function guardarAvance(){
+  const data = recolectarEstado();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const muestra = data.general.muestra || 'sin-muestra';
+  const ts = new Date().toISOString().replace(/[:T]/g,'-').slice(0,16);
+  a.href = url;
+  a.download = `Avance_DesgasteLosAngeles_${muestra}_${ts}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  dirty = false;
+  lastSavedAt = new Date();
+  const el = document.getElementById('statusIndicator');
+  el.className = 'status-indicator saved';
+  document.getElementById('statusText').textContent = 'Guardado · ' + fmtFechaHora(lastSavedAt);
+}
+
+function cargarAvance(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      restaurarEstado(data);
+      dirty = false;
+      const el = document.getElementById('statusIndicator');
+      el.className = 'status-indicator saved';
+      document.getElementById('statusText').textContent = 'Avance cargado · ' + fmtFechaHora(new Date());
+    }catch(err){
+      alert('No se pudo leer el archivo de avance: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function restaurarEstado(data){
+  s_val('g_boleta', data.general?.boleta);
+  s_val('g_muestra', data.general?.muestra);
+  s_val('g_fechaRecepcion', data.general?.fechaRecepcion);
+  s_val('g_fechaEnsayo', data.general?.fechaEnsayo);
+  s_val('g_empresa', data.general?.empresa);
+  s_val('g_rutEmpresa', data.general?.rutEmpresa);
+  s_val('g_obra', data.general?.obra);
+  s_val('g_direccionObra', data.general?.direccionObra);
+  s_val('g_material', data.general?.material);
+  s_val('g_procedencia', data.general?.procedencia);
+  s_val('g_solicitadoPor', data.general?.solicitadoPor);
+
+  document.getElementById('g_graduacion').value = data.graduacion || 'B';
+  renderFracciones();
+  renderChips();
+  s_val('g_revolucionesDefault', data.revolucionesDefault);
+
+  const g = GRADUACIONES[data.graduacion || 'B'];
+  g.fracciones.forEach(f=>{
+    s_val('frac_'+f.key, data.fracciones ? data.fracciones[f.key] : '');
+  });
+
+  document.getElementById('g_segundaDet').checked = !!data.segundaDet;
+  renderDeterminaciones();
+  (data.determinaciones || []).forEach((det,i)=>{
+    s_val(`det${i+1}_masaInicial`, det.masaInicial);
+    s_val(`det${i+1}_masaRetenida`, det.masaRetenida);
+    s_val(`det${i+1}_revoluciones`, det.revoluciones);
+  });
+
+  if(data.exigenciaSel){
+    const radio = document.querySelector(`input[name=exigencia][value="${data.exigenciaSel}"]`);
+    if(radio) radio.checked = true;
+  }
+  s_val('exigenciaCustom', data.exigenciaCustom);
+
+  s_val('g_observaciones', data.observaciones);
+
+  Object.keys(firmasState).forEach(k => delete firmasState[k]);
+  if(data.firmas){
+    Object.keys(data.firmas).forEach(k=>{ if(data.firmas[k]) firmasState[k] = data.firmas[k]; });
+  }
+  renderFirmaGrid();
+  calcularTodo();
+}
+
+window.addEventListener('beforeunload', function(e){
+  if(dirty){
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
+
+/* ============================================================
+   GENERACIÓN DE PDF — "Alternativa C"
+   ============================================================ */
+function generarPDF(){
+  const r = calcularTodo();
+  if(!firmasState.tecnico){
+    alert('El técnico debe firmar antes de generar el informe.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 14;
+  let y = 0;
+
+  const navy = [13,21,38];
+  const green = [0,230,118];
+  const amber = [255,179,0];
+  const red = [255,82,82];
+  const muted = [138,147,168];
+  const dark = [30,38,58];
+
+  const estado = estadoDocumento();
+  const anio = new Date().getFullYear();
+  const muestra = g_val('g_muestra') || 's/n';
+  const codigo = `LA-${anio}-${muestra}`;
+
+  // ---- Header ----
+  doc.setFillColor(...navy);
+  doc.rect(0,0,pageW,22,'F');
+  doc.setFillColor(...green);
+  doc.roundedRect(marginX, 5.5, 11, 11, 2, 2, 'F');
+  doc.setTextColor(6,33,15);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text('QC', marginX+5.5, 12, {align:'center'});
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text('QCdigital', marginX+15, 11);
+  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.setTextColor(200,210,225);
+  doc.text('Módulo Laboratorio', marginX+15, 16.5);
+
+  doc.setFontSize(9); doc.setTextColor(...green);
+  doc.text('INFORME DE ENSAYO DE LABORATORIO', pageW-marginX, 11, {align:'right'});
+  doc.setTextColor(200,210,225); doc.setFontSize(8);
+  doc.text('Geotecnia / Suelos', pageW-marginX, 16.5, {align:'right'});
+
+  y = 28;
+  doc.setTextColor(...navy);
+  doc.setFont('helvetica','bold'); doc.setFontSize(15);
+  doc.text('Desgaste de Los Ángeles', marginX, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.setTextColor(...muted);
+  doc.text('NCh 1369 · equivalente ASTM C131 / C535, AASHTO T96', marginX, y+5.5);
+
+  // ---- Listón de estado + QR ----
+  y += 10;
+  const ribbonH = 20;
+  doc.setFillColor(...navy);
+  doc.roundedRect(marginX, y, pageW-2*marginX, ribbonH, 2, 2, 'F');
+  const col = estado.texto === 'Informe validado' ? green : (estado.texto === 'Resultado provisorio' ? amber : muted);
+  doc.setFillColor(...col);
+  doc.roundedRect(marginX+4, y+4.5, 40, 8, 4, 4, 'F');
+  doc.setTextColor(estado.texto==='Informe validado' ? 6 : (estado.texto==='Resultado provisorio'?36:20), estado.texto==='Informe validado'?33:(estado.texto==='Resultado provisorio'?27:20), estado.texto==='Informe validado'?15:0);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text(estado.texto, marginX+24, y+9.5, {align:'center'});
+
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+  doc.text(`Código: ${codigo}`, marginX+50, y+8);
+  doc.text(`Emitido: ${fmtFechaHora(new Date())}`, marginX+50, y+14);
+
+  dibujarQR(doc, `QCDIGITAL-LAB|${codigo}|${estado.texto}`, pageW-marginX-16, y+2, 16);
+
+  // ---- Franja de metadatos ----
+  y += ribbonH + 8;
+  doc.setDrawColor(...dark);
+  doc.setFillColor(245,247,251);
+  doc.roundedRect(marginX, y, pageW-2*marginX, 22, 2, 2, 'F');
+  const metaCol1 = marginX+4, metaCol2 = marginX + (pageW-2*marginX)/2 + 2;
+  const metaRows = [
+    ['Boleta N°', g_val('g_boleta') || '—', 'Muestra N°', muestra],
+    ['Fecha de recepción', g_val('g_fechaRecepcion') || '—', 'Fecha de ensayo', g_val('g_fechaEnsayo') || '—'],
+    ['Empresa', g_val('g_empresa') || '—', 'Obra / Proyecto', g_val('g_obra') || '—'],
+  ];
+  doc.setFontSize(7.5); doc.setTextColor(...muted); doc.setFont('helvetica','bold');
+  let my = y + 5.5;
+  metaRows.forEach(row=>{
+    doc.setFont('helvetica','bold'); doc.setTextColor(...muted); doc.setFontSize(6.8);
+    doc.text(row[0].toUpperCase(), metaCol1, my-2.6);
+    doc.text(row[2].toUpperCase(), metaCol2, my-2.6);
+    doc.setFont('helvetica','normal'); doc.setTextColor(...navy); doc.setFontSize(8.6);
+    const w1 = pageW/2 - marginX - 6;
+    const t1 = doc.splitTextToSize(String(row[1]), w1);
+    const t3 = doc.splitTextToSize(String(row[3]), w1);
+    doc.text(t1[0] || '—', metaCol1, my+1.3);
+    doc.text(t3[0] || '—', metaCol2, my+1.3);
+    my += 6.6;
+  });
+
+  // ---- Tarjetas de resultado ----
+  y += 26;
+  const cardW = (pageW - 2*marginX - 3*4) / 4;
+  const cardH = 20;
+  const cardVals = [
+    ['Graduación', r.gradKey, navy],
+    ['% Desgaste', r.resultadoFinal!==null ? r.resultadoFinal.toFixed(1)+'%' : '—', r.cumple===false ? red : green],
+    ['N° revoluciones', String(r.revoluciones), navy],
+    ['Cumplimiento', r.cumple===null?'—':(r.cumple?'Cumple':'No cumple'), r.cumple===false?red:green],
+  ];
+  cardVals.forEach((c,i)=>{
+    const cx = marginX + i*(cardW+4);
+    doc.setDrawColor(...dark); doc.setFillColor(250,251,253);
+    doc.roundedRect(cx, y, cardW, cardH, 2, 2, 'FD');
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(...muted);
+    doc.text(c[0].toUpperCase(), cx+3, y+6);
+    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...c[2]);
+    doc.text(String(c[1]), cx+3, y+15);
+  });
+
+  // ---- Dos columnas: gráfico + tabla ----
+  y += cardH + 8;
+  const colW = (pageW - 2*marginX - 6)/2;
+  const chartImg = document.getElementById('chartDesgaste').toDataURL('image/png', 1.0);
+  const chartH = 55;
+  doc.setDrawColor(...dark);
+  doc.roundedRect(marginX, y, colW, chartH+8, 2, 2);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...navy);
+  doc.text('% Desgaste vs. exigencia', marginX+3, y+5.5);
+  doc.addImage(chartImg, 'PNG', marginX+3, y+7, colW-6, chartH-4);
+
+  const tableX = marginX + colW + 6;
+  doc.roundedRect(tableX, y, colW, chartH+8, 2, 2);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...navy);
+  doc.text('Fracciones pesadas', tableX+3, y+5.5);
+  let ty = y + 9;
+  doc.setFontSize(6.6);
+  const g = GRADUACIONES[r.gradKey];
+  const nominalX = tableX + colW - 26;
+  const pesadaX = tableX + colW - 4;
+  doc.setFont('helvetica','bold'); doc.setTextColor(...muted);
+  doc.text('Fracción', tableX+3, ty);
+  doc.text('Nominal', nominalX, ty, {align:'right'});
+  doc.text('Pesada', pesadaX, ty, {align:'right'});
+  ty += 3.2;
+  doc.setDrawColor(...dark); doc.line(tableX+3, ty-2, tableX+colW-3, ty-2);
+  doc.setFont('helvetica','normal'); doc.setTextColor(...navy);
+  g.fracciones.forEach(f=>{
+    const pesada = g_val('frac_'+f.key) || '—';
+    doc.text(f.key+' mm', tableX+3, ty+2);
+    doc.text(String(f.nominal), nominalX, ty+2, {align:'right'});
+    doc.text(String(pesada), pesadaX, ty+2, {align:'right'});
+    ty += 5.4;
+  });
+
+  // ---- Información general ----
+  y += chartH + 8 + 10;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+  doc.text('Información general', marginX, y);
+  y += 4;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(60,68,88);
+  const infoLines = [
+    `Material: ${g_val('g_material')||'—'}     Procedencia: ${g_val('g_procedencia')||'—'}`,
+    `Solicitado por: ${g_val('g_solicitadoPor')||'—'}     RUT empresa: ${g_val('g_rutEmpresa')||'—'}`,
+    `Ubicación de la obra: ${g_val('g_direccionObra')||'—'}`,
+  ];
+  infoLines.forEach(line=>{
+    const wrapped = doc.splitTextToSize(line, pageW-2*marginX);
+    doc.text(wrapped, marginX, y+3.5);
+    y += 3.5 * wrapped.length + 1.5;
+  });
+  const obs = g_val('g_observaciones');
+  if(obs){
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...muted);
+    doc.text('OBSERVACIONES', marginX, y+3);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(60,68,88);
+    const wrapped = doc.splitTextToSize(obs, pageW-2*marginX);
+    doc.text(wrapped, marginX, y+7.5);
+    y += 7.5 + 3.5*wrapped.length;
+  }
+
+  // ---- Firmas ----
+  y = Math.max(y+6, pageH - 52);
+  doc.setDrawColor(...dark); doc.line(marginX, y, pageW-marginX, y);
+  y += 6;
+  const firmaW = (pageW - 2*marginX - 2*6)/3;
+  ROLES.forEach((role,i)=>{
+    const fx = marginX + i*(firmaW+6);
+    const f = firmasState[role.key];
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...muted);
+    doc.text(role.label.toUpperCase(), fx, y);
+    if(f){
+      doc.addImage(f.imagen, 'PNG', fx, y+2, firmaW*0.7, 16);
+      doc.setDrawColor(...muted); doc.line(fx, y+20, fx+firmaW, y+20);
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...navy);
+      doc.text(f.nombre, fx, y+24);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...muted);
+      doc.text(`RUT ${f.rut}`, fx, y+28);
+      doc.text(`N° ${codigo}-${role.key.slice(0,3).toUpperCase()}`, fx, y+32);
+      doc.text(fmtFechaHora(f.firmadoAt), fx, y+36);
+    } else {
+      doc.setDrawColor(...muted); doc.line(fx, y+20, fx+firmaW, y+20);
+      doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(...muted);
+      doc.text('Pendiente de firma', fx, y+16);
+    }
+  });
+
+  // ---- Footer ----
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(...muted);
+  doc.text('QCDigital Laboratorio · Documento generado automáticamente · Verificación mediante código QR', marginX, pageH-6);
+
+  const estadoSlug = estado.texto === 'Informe validado' ? 'validado' : 'provisorio';
+  doc.save(`Informe_DesgasteLosAngeles_${muestra}_${estadoSlug}.pdf`);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  initGraduacionSelect();
+  renderChips();
+  renderFracciones();
+  renderExigenciaOpts();
+  renderDeterminaciones();
+  renderFirmaGrid();
+  calcularTodo();
+  document.getElementById('g_muestra').addEventListener('input', actualizarCodigoPreview);
+}
+init();
+</script>
+</body>
+</html>

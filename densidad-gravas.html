@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCDigital Laboratorio — Densidad de Gravas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0d1526;
+    --navy2:#141f38;
+    --navy3:#1b2947;
+    --green:#00e676;
+    --green-dark:#00b85c;
+    --amber:#ffb300;
+    --red:#ff5252;
+    --border:#2a3654;
+    --text:#e8ecf5;
+    --text-dim:#9aa5c0;
+    --card-bg:#111a30;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI', Arial, sans-serif; background:#0a1120; color:var(--text);
+    padding-bottom:60px;
+  }
+  header.app-header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);
+    padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:2px solid var(--green); position:sticky; top:0; z-index:50;
+  }
+  .wordmark{display:flex; align-items:center; gap:12px;}
+  .wordmark .logo{
+    width:38px; height:38px; border-radius:8px;
+    background:linear-gradient(135deg,var(--green) 0%, var(--green-dark) 100%);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy); font-size:18px;
+  }
+  .wordmark .brand{font-size:20px; font-weight:800; letter-spacing:.5px;}
+  .wordmark .brand span{color:var(--green);}
+  .tag{font-size:11px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; margin-top:2px;}
+  .save-bar{display:flex; align-items:center; gap:10px;}
+  .save-status{font-size:12px; color:var(--text-dim);}
+  .save-status.dirty{color:var(--amber);}
+  .save-status.saved{color:var(--green);}
+  button{
+    cursor:pointer; border:1px solid var(--border); background:var(--navy2); color:var(--text);
+    padding:9px 16px; border-radius:7px; font-size:13px; font-weight:600; transition:.15s;
+  }
+  button:hover{border-color:var(--green);}
+  button.primary{background:var(--green); color:var(--navy); border-color:var(--green);}
+  button.primary:hover{background:var(--green-dark);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  main{max-width:1180px; margin:0 auto; padding:24px 20px;}
+  h1{font-size:22px; margin:0 0 4px;}
+  .subtitle{color:var(--text-dim); font-size:13px; margin-bottom:22px;}
+  .card{
+    background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
+    padding:20px 22px; margin-bottom:18px;
+  }
+  .card h2{font-size:15px; margin:0 0 16px; color:var(--green); display:flex; align-items:center; gap:8px;}
+  .card h2 .num{
+    width:24px; height:24px; border-radius:50%; background:var(--navy3); color:var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--green);
+  }
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12px; color:var(--text-dim);}
+  .field input, .field select, .field textarea{
+    background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:6px; font-size:13px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--green);}
+  .hint{font-size:11px; color:var(--text-dim); margin-top:2px;}
+  .hint.warn{color:var(--amber);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left; padding:8px 6px; color:var(--text-dim); font-weight:600; border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  td{padding:6px; border-bottom:1px solid #1a2440; vertical-align:middle;}
+  td input, td select{
+    width:100%; background:#0c1424; border:1px solid var(--border); color:var(--text);
+    padding:6px 7px; border-radius:5px; font-size:12.5px; font-family:inherit;
+  }
+  .btn-icon{padding:5px 9px; font-size:12px;}
+  .btn-danger{border-color:var(--red); color:var(--red);}
+  .btn-danger:hover{background:rgba(255,82,82,.12);}
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;}
+  .badge.ok{background:rgba(0,230,118,.15); color:var(--green);}
+  .badge.warn{background:rgba(255,179,0,.15); color:var(--amber);}
+  .badge.bad{background:rgba(255,82,82,.15); color:var(--red);}
+  .badge.neutral{background:rgba(154,165,192,.15); color:var(--text-dim);}
+  .toolbar{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center;}
+  .results-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .result-card{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .result-card .label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .result-card .value{font-size:20px; font-weight:800; margin-top:4px;}
+  .chart-wrap{background:#0c1424; border:1px solid var(--border); border-radius:10px; padding:14px; height:280px;}
+  .chart-caption{font-size:11px; color:var(--text-dim); margin-top:8px; text-align:center;}
+  .firmas-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;}
+  .firma-box{background:var(--navy2); border:1px solid var(--border); border-radius:10px; padding:14px;}
+  .firma-box h3{font-size:13px; margin:0 0 4px; display:flex; justify-content:space-between; align-items:center;}
+  .firma-box .rol-tag{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .firma-pad-wrap canvas{width:100%; height:110px; background:#fff; border-radius:6px; cursor:crosshair; touch-action:none;}
+  .firma-estado{font-size:12px; margin-top:8px;}
+  .firma-estado.pendiente{color:var(--text-dim);}
+  .firma-estado.firmado{color:var(--green); font-weight:600;}
+  .footer-note{font-size:11px; color:var(--text-dim); line-height:1.6; margin-top:26px; padding:16px 18px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px;}
+  .footer-note b{color:var(--text);}
+</style>
+</head>
+<body><div id="qcdLabBar" style="position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;background:#0d1526;color:#fff;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:9px 14px;padding-top:calc(9px + env(safe-area-inset-top));border-bottom:2px solid #f5851f"><a href="../index.html#ensayos" style="color:#fff;text-decoration:none">&#8249; Laboratorio</a><span style="flex:1;text-align:center;opacity:.8;font-weight:500">Densidad real, neta y absorción de agua en gravas</span><a href="../documento.html?c=PTE-AR-12" style="color:#f5851f;text-decoration:none">Ver PTE</a></div>
+
+<header class="app-header">
+  <div class="wordmark">
+    <div class="logo">QC</div>
+    <div>
+      <div class="brand">QC<span>digital</span></div>
+      <div class="tag">Módulo Laboratorio</div>
+    </div>
+  </div>
+  <div class="save-bar">
+    <span id="saveStatus" class="save-status">Sin cambios</span>
+    <button id="btnCargar">Cargar avance</button>
+    <input type="file" id="fileInputAvance" accept=".json" style="display:none">
+    <button id="btnGuardar" class="primary">Guardar avance</button>
+  </div>
+</header>
+
+<main>
+  <h1>Densidad de Gravas (árido grueso)</h1>
+  <div class="subtitle">Geotecnia / Suelos · ZN-FOR-204 (referenciado desde ZN-FOR-303) — NCh 1117.Of77 (equivalente ASTM C127) · Piloto QCDigital</div>
+
+  <div class="card">
+    <h2><span class="num">1</span> Información general</h2>
+    <div class="grid">
+      <div class="field"><label>N° Boleta</label><input id="g_boleta"></div>
+      <div class="field"><label>N° Muestra</label><input id="g_muestra"></div>
+      <div class="field"><label>Fecha de ensayo</label><input type="date" id="g_fecha"></div>
+      <div class="field"><label>Fecha de informe</label><input type="date" id="g_fechaInforme"></div>
+      <div class="field"><label>Empresa solicitante</label><input id="g_empresa"></div>
+      <div class="field"><label>RUT empresa</label><input id="g_rutEmpresa"></div>
+      <div class="field" style="grid-column:span 2"><label>Obra / Proyecto</label><input id="g_obra"></div>
+      <div class="field"><label>Ubicación / Procedencia de la muestra</label><input id="g_direccionObra"></div>
+      <div class="field"><label>Descripción del material</label><input id="g_material"></div>
+      <div class="field"><label>Ensayo realizado por</label><input id="g_responsable"></div>
+      <div class="field"><label>Solicitado por</label><input id="g_solicitadoPor"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Acondicionamiento de la muestra</h2>
+    <div class="grid">
+      <div class="field"><label>Tamaño máximo nominal, TMN (mm)</label><input type="number" step="0.1" id="g_tmn"></div>
+      <div class="field"><label>Horas de inmersión</label><input type="number" step="0.5" id="g_horasInmersion" value="24"></div>
+      <div class="field"><label>Fecha/hora inicio inmersión</label><input type="datetime-local" id="g_inicioInmersion"></div>
+      <div class="field"><label>Fecha/hora fin inmersión</label><input type="datetime-local" id="g_finInmersion"></div>
+    </div>
+    <div class="hint" id="hintMasaMin">Masa mínima de muestra según NCh 1117.Of77: 4 kg para TMN ≤ 40 mm, sumando 4 kg por cada 10 mm adicionales sobre 40 mm. Inmersión: 24 ± 4 h (extender si la saturación no se completa).</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> Determinaciones</h2>
+    <div style="overflow-x:auto">
+    <table id="tablaDet">
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>C — Masa seca a estufa (g)</th>
+          <th>B — Masa saturada superficialmente seca (g)</th>
+          <th>A — Masa sumergida en agua, SSS (g)</th>
+          <th>ρ real SSS</th>
+          <th>ρ real seco</th>
+          <th>ρ neta</th>
+          <th>Absorción</th>
+          <th>Masa mín.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbodyDet"></tbody>
+    </table>
+    </div>
+    <div class="toolbar">
+      <button id="btnAddDet">+ Agregar determinación (máx. 3)</button>
+    </div>
+    <div class="hint">ρ real (SSS) = B / (B − A) · 1000 kg/m³ · ρ real (seco) = C / (B − A) · 1000 kg/m³ · <b>ρ neta = C / (C − A) · 1000 kg/m³</b> (este es el valor que cita ZN-FOR-303 como "Densidad neta de las gravas") · Absorción = (B − C) / C · 100 %. Diferencia admisible entre determinaciones: ≤30 kg/m³ en las densidades, ≤0,3% en la absorción (NCh 1117.Of77).</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> Resultados</h2>
+    <div class="results-grid">
+      <div class="result-card"><div class="label">Densidad Neta (ZN-FOR-204)</div><div class="value" id="rc_dNeta">—</div></div>
+      <div class="result-card"><div class="label">Densidad Real (SSS)</div><div class="value" id="rc_dRealSSS" style="font-size:17px">—</div></div>
+      <div class="result-card"><div class="label">Densidad Real (seca)</div><div class="value" id="rc_dRealSeca" style="font-size:17px">—</div></div>
+      <div class="result-card"><div class="label">Absorción de agua</div><div class="value" id="rc_absorcion" style="font-size:17px">—</div></div>
+    </div>
+    <div style="margin-top:18px">
+      <div class="chart-wrap"><canvas id="chartDensidades"></canvas></div>
+      <div class="chart-caption">Barras por determinación (ámbar = ρ real SSS, celeste = ρ real seco, verde = ρ neta) · línea punteada verde = Densidad Neta final</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span> Observaciones generales</h2>
+    <div class="field"><textarea id="g_observaciones" rows="3" style="width:100%"></textarea></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span> Firmas</h2>
+    <div class="firmas-row" id="firmasRow"></div>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnPdfProvisorio">Generar informe PDF (provisorio)</button>
+    <button id="btnPdfValidado" class="primary">Generar informe PDF</button>
+  </div>
+
+  <div class="footer-note">
+    <b>Notas del piloto QCDigital:</b> el formulario oficial ZN-FOR-204 citado dentro de ZN-FOR-303 (Densidad de Partículas Sólidas) no está disponible con texto extraíble en el proyecto (`FORMATO DENSIDAD RETENIDAS 5 MM.pdf` es un escaneo) — este piloto se construyó directamente sobre <b>NCh 1117.Of77</b> ("Áridos para morteros y hormigones — Determinación de las densidades real y neta y de la absorción de agua de las gravas"), equivalente a ASTM C127, verificada contra el texto completo de la norma (fórmulas de la cláusula 10, masa mínima de muestra según TMN, tolerancias de consistencia entre determinaciones duplicadas). <b>Conviene que el laboratorio confirme que los nombres de campo y el flujo calzan con la planilla ZN-FOR-204 real</b> antes de tomarlo como plantilla definitiva, igual que con CBR, Desgaste de Los Ángeles y Estratigrafía. El valor de <b>Densidad Neta</b> que entrega este piloto es exactamente el dato que hoy se ingresa manualmente en el piloto de Densidad de Partículas Sólidas (campo "Densidad neta de las gravas ZN-FOR-204") para calcular el Peso Específico Total Ponderado — a futuro debería enlazarse automáticamente entre ambos pilotos en vez de copiarse a mano. La norma no especifica un número de firmantes para este informe; este piloto mantiene el flujo estándar de 3 niveles (técnico/revisor/validador) de QCDigital por consistencia con el resto del sistema.
+  </div>
+</main>
+
+<script>
+const ROLES = [
+  {key:'tecnico', label:'Técnico de terreno', desc:'Nivel 1 — Captura'},
+  {key:'revisor', label:'Revisor', desc:'Nivel 2 — Filtro de cálculos y datos'},
+  {key:'validador', label:'Validador', desc:'Nivel 3 — Firma oficial'},
+];
+
+// Listener delegado genérico para todos los campos "g_*" -- sin esto, editarlos solos no dispara
+// calcularTodo() ni markDirty() (bug encontrado y corregido en pilotos anteriores; se incluye
+// desde el arranque en este piloto).
+document.querySelectorAll('main input, main select, main textarea').forEach(el => {
+  if (el.id && el.id.startsWith('g_')){
+    el.addEventListener('input', () => { markDirty(); calcularTodo(); });
+    el.addEventListener('change', () => { markDirty(); calcularTodo(); });
+  }
+});
+
+// --- Determinaciones: tabla dinamica, hasta 3 ---
+let detSeq = 0;
+let determinaciones = [];
+function nuevaDet(vals){ detSeq++; return Object.assign({id:'d'+detSeq, c:'', b:'', a:''}, vals||{}); }
+
+function masaMinimaKg(tmnMm){
+  if (isNaN(tmnMm) || tmnMm <= 0) return null;
+  if (tmnMm <= 40) return 4;
+  return 4 + 4 * ((tmnMm - 40) / 10);
+}
+
+function renderDet(){
+  const tbody = document.getElementById('tbodyDet');
+  tbody.innerHTML = '';
+  determinaciones.forEach((d, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = d.id;
+    tr.innerHTML = `
+      <td style="text-align:center">${idx+1}</td>
+      <td><input type="number" step="0.1" class="f-c" value="${d.c}" style="width:100px"></td>
+      <td><input type="number" step="0.1" class="f-b" value="${d.b}" style="width:100px"></td>
+      <td><input type="number" step="0.1" class="f-a" value="${d.a}" style="width:100px"></td>
+      <td><b><span class="f-dRealSSS">—</span></b></td>
+      <td><b><span class="f-dRealSeca">—</span></b></td>
+      <td><b><span class="f-dNeta">—</span></b></td>
+      <td><span class="f-absorcion">—</span></td>
+      <td><span class="f-masaMin">—</span></td>
+      <td><button class="btn-icon btn-danger f-del">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  attachDetHandlers();
+  calcularTodo();
+}
+function attachDetHandlers(){
+  document.querySelectorAll('#tbodyDet tr').forEach(tr => {
+    const id = tr.dataset.id;
+    const d = determinaciones.find(x=>x.id===id);
+    const bind = (sel, key) => { const el = tr.querySelector(sel); el.addEventListener('input', () => { d[key]=el.value; markDirty(); calcularTodo(); }); };
+    bind('.f-c','c'); bind('.f-b','b'); bind('.f-a','a');
+    tr.querySelector('.f-del').addEventListener('click', () => { determinaciones = determinaciones.filter(x=>x.id!==id); renderDet(); markDirty(); });
+  });
+}
+document.getElementById('btnAddDet').addEventListener('click', () => {
+  if (determinaciones.length >= 3){ alert('Máximo 3 determinaciones.'); return; }
+  determinaciones.push(nuevaDet()); renderDet(); markDirty();
+});
+
+// Plugin Chart.js para dibujar una linea de referencia horizontal (Densidad Neta final)
+// directamente sobre el area del grafico -- mismo patron usado en pilotos anteriores para evitar
+// que un dataset tipo "line" colapse visualmente con pocas categorias en el eje X.
+const referenceLinePlugin = {
+  id: 'referenceLine',
+  afterDatasetsDraw(chart, args, opts){
+    if (!opts || opts.value===null || opts.value===undefined || isNaN(opts.value)) return;
+    const {ctx, chartArea, scales} = chart;
+    if (!chartArea || !scales.y) return;
+    const y = scales.y.getPixelForValue(opts.value);
+    if (y < chartArea.top || y > chartArea.bottom) return;
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    ctx.strokeStyle = opts.color || '#00e676';
+    ctx.beginPath();
+    ctx.moveTo(chartArea.left, y);
+    ctx.lineTo(chartArea.right, y);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined') Chart.register(referenceLinePlugin);
+
+let chart = null;
+function calcularTodo(){
+  const tmn = parseFloat(document.getElementById('g_tmn').value);
+  const minKg = masaMinimaKg(tmn);
+  const hintEl = document.getElementById('hintMasaMin');
+  if (minKg !== null){
+    hintEl.textContent = `Masa mínima de muestra estimada para TMN ${tmn} mm: ${minKg.toFixed(1)} kg (NCh 1117.Of77). Inmersión: 24 ± 4 h.`;
+  }
+
+  const filas = []; // {dRealSSS, dRealSeca, dNeta, absorcion}
+  document.querySelectorAll('#tbodyDet tr').forEach(tr => {
+    const c = parseFloat(tr.querySelector('.f-c').value);
+    const b = parseFloat(tr.querySelector('.f-b').value);
+    const a = parseFloat(tr.querySelector('.f-a').value);
+    const elSSS = tr.querySelector('.f-dRealSSS'), elSeca = tr.querySelector('.f-dRealSeca'),
+          elNeta = tr.querySelector('.f-dNeta'), elAbs = tr.querySelector('.f-absorcion'),
+          elMin = tr.querySelector('.f-masaMin');
+    let row = {dRealSSS:null, dRealSeca:null, dNeta:null, absorcion:null};
+    if (!isNaN(c) && !isNaN(b) && !isNaN(a) && (b-a)!==0 && (c-a)!==0 && c>0){
+      row.dRealSSS = (b/(b-a))*1000;
+      row.dRealSeca = (c/(b-a))*1000;
+      row.dNeta = (c/(c-a))*1000;
+      row.absorcion = ((b-c)/c)*100;
+      elSSS.textContent = row.dRealSSS.toFixed(0) + ' kg/m³';
+      elSeca.textContent = row.dRealSeca.toFixed(0) + ' kg/m³';
+      elNeta.textContent = row.dNeta.toFixed(0) + ' kg/m³';
+      elAbs.textContent = row.absorcion.toFixed(2) + ' %';
+    } else {
+      elSSS.textContent = '—'; elSeca.textContent = '—'; elNeta.textContent = '—'; elAbs.textContent = '—';
+    }
+    if (minKg !== null && !isNaN(c) && c>0){
+      const okMasa = c >= minKg*1000;
+      elMin.innerHTML = okMasa ? '<span class="badge ok">OK</span>' : '<span class="badge warn">Insuficiente</span>';
+    } else {
+      elMin.innerHTML = '—';
+    }
+    filas.push(row);
+  });
+
+  const validas = filas.filter(f => f.dNeta !== null);
+  const avg = key => validas.length ? validas.reduce((s,f)=>s+f[key],0)/validas.length : null;
+  const dRealSSSAvg = avg('dRealSSS'), dRealSecaAvg = avg('dRealSeca'), dNetaAvg = avg('dNeta'), absorcionAvg = avg('absorcion');
+
+  let consistenciaDensidad = true, consistenciaAbsorcion = true;
+  if (validas.length >= 2){
+    const netas = validas.map(f=>f.dNeta);
+    consistenciaDensidad = (Math.max(...netas) - Math.min(...netas)) <= 30;
+    const absorciones = validas.map(f=>f.absorcion);
+    consistenciaAbsorcion = (Math.max(...absorciones) - Math.min(...absorciones)) <= 0.3;
+  }
+
+  document.getElementById('rc_dNeta').innerHTML = dNetaAvg!==null
+    ? dNetaAvg.toFixed(0) + ' kg/m³' + (consistenciaDensidad ? '' : ' <span class="badge warn">Revisar consistencia</span>')
+    : '—';
+  document.getElementById('rc_dRealSSS').textContent = dRealSSSAvg!==null ? dRealSSSAvg.toFixed(0) + ' kg/m³' : '—';
+  document.getElementById('rc_dRealSeca').textContent = dRealSecaAvg!==null ? dRealSecaAvg.toFixed(0) + ' kg/m³' : '—';
+  document.getElementById('rc_absorcion').innerHTML = absorcionAvg!==null
+    ? absorcionAvg.toFixed(2) + ' %' + (consistenciaAbsorcion ? '' : ' <span class="badge warn">Revisar</span>')
+    : '—';
+
+  dibujarChart(filas, dNetaAvg);
+}
+
+function dibujarChart(filas, dNetaAvg){
+  const ctx = document.getElementById('chartDensidades').getContext('2d');
+  const labels = filas.map((f,i) => 'Det. ' + (i+1));
+  const dSSS = filas.map(f => f.dRealSSS!==null ? f.dRealSSS : 0);
+  const dSeca = filas.map(f => f.dRealSeca!==null ? f.dRealSeca : 0);
+  const dNeta = filas.map(f => f.dNeta!==null ? f.dNeta : 0);
+  if (chart) chart.destroy();
+  const valoresEje = [...dSSS, ...dSeca, ...dNeta].filter(v=>v>0);
+  if (dNetaAvg!==null) valoresEje.push(dNetaAvg);
+  const minV = valoresEje.length ? parseFloat((Math.min(...valoresEje) * 0.9).toPrecision(6)) : 0;
+  const maxV = valoresEje.length ? parseFloat((Math.max(...valoresEje) * 1.1).toPrecision(6)) : 3000;
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'ρ real SSS', data: dSSS, backgroundColor:'#ffb300', borderRadius:4 },
+        { label:'ρ real seco', data: dSeca, backgroundColor:'#4fc3f7', borderRadius:4 },
+        { label:'ρ neta', data: dNeta, backgroundColor:'#00e676', borderRadius:4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: {
+        legend: { display:true, position:'top', labels:{color:'#9aa5c0', boxWidth:12, font:{size:10}} },
+        referenceLine: { value: dNetaAvg, color:'#00e676' }
+      },
+      scales: {
+        x: { ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' } },
+        y: { min:minV, max:maxV, ticks: { color:'#9aa5c0' }, grid: { color:'#1a2440' }, title:{display:true,text:'Densidad (kg/m³)',color:'#9aa5c0'} }
+      }
+    }
+  });
+}
+
+// --- Firmas ---
+let firmas = {};
+function initFirmas(){
+  const wrap = document.getElementById('firmasRow');
+  wrap.innerHTML = '';
+  ROLES.forEach((r,i) => {
+    const box = document.createElement('div');
+    box.className = 'firma-box';
+    box.innerHTML = `
+      <h3>${r.label} <span class="rol-tag">${r.desc}</span></h3>
+      <div class="field" style="margin-bottom:6px"><label>Nombre completo</label><input id="firmaNombre_${r.key}"></div>
+      <div class="field" style="margin-bottom:6px"><label>RUT</label><input id="firmaRut_${r.key}"></div>
+      <div class="firma-pad-wrap"><canvas id="firmaPad_${r.key}" width="400" height="110"></canvas></div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="btn-icon" data-limpiar="${r.key}">Limpiar</button>
+        <button class="btn-icon primary" data-firmar="${r.key}" ${i>0?'disabled':''}>Firmar</button>
+      </div>
+      <div class="firma-estado pendiente" id="firmaEstado_${r.key}">Pendiente de firma</div>
+    `;
+    wrap.appendChild(box);
+  });
+  ROLES.forEach(r => setupFirmaPad(r.key));
+  wrap.querySelectorAll('[data-limpiar]').forEach(btn => btn.addEventListener('click', () => limpiarPad(btn.dataset.limpiar)));
+  wrap.querySelectorAll('[data-firmar]').forEach(btn => btn.addEventListener('click', () => firmarRol(btn.dataset.firmar)));
+}
+
+const padCtx = {};
+function setupFirmaPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#0d1526'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  padCtx[key] = {ctx, drawing:false, hasDrawn:false};
+  const getPos = (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+    return {x: cx * (canvas.width/rect.width), y: cy * (canvas.height/rect.height)};
+  };
+  const start = (ev) => { ev.preventDefault(); const p = getPos(ev); padCtx[key].drawing=true; padCtx[key].hasDrawn=true; ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  const move = (ev) => { if(!padCtx[key].drawing) return; ev.preventDefault(); const p = getPos(ev); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+  const end = () => { padCtx[key].drawing=false; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function limpiarPad(key){
+  const canvas = document.getElementById('firmaPad_'+key);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  padCtx[key].hasDrawn = false;
+}
+
+function firmarRol(key){
+  const nombre = document.getElementById('firmaNombre_'+key).value.trim();
+  const rut = document.getElementById('firmaRut_'+key).value.trim();
+  if (!nombre || !rut){ alert('Completa nombre y RUT antes de firmar.'); return; }
+  if (!padCtx[key].hasDrawn){ alert('Dibuja la firma en el recuadro antes de firmar.'); return; }
+  const canvas = document.getElementById('firmaPad_'+key);
+  const imgDataUrl = canvas.toDataURL('image/png');
+  firmas[key] = {nombre, rut, imgDataUrl, firmadoAt: new Date().toISOString()};
+  const estadoEl = document.getElementById('firmaEstado_'+key);
+  estadoEl.textContent = 'Firmado — ' + fmtFechaHora(firmas[key].firmadoAt);
+  estadoEl.className = 'firma-estado firmado';
+  const idx = ROLES.findIndex(r=>r.key===key);
+  document.getElementById('firmaNombre_'+key).disabled = true;
+  document.getElementById('firmaRut_'+key).disabled = true;
+  document.querySelector(`[data-firmar="${key}"]`).disabled = true;
+  document.querySelector(`[data-limpiar="${key}"]`).disabled = true;
+  if (idx+1 < ROLES.length){
+    const nextBtn = document.querySelector(`[data-firmar="${ROLES[idx+1].key}"]`);
+    if (nextBtn) nextBtn.disabled = false;
+  }
+  markDirty(); persistSavedIndicator();
+}
+
+function fmtFechaHora(iso){
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// --- Descarga: capacidad "downloads" en Artifact publicado, o descarga clasica por blob ---
+async function offerDownload(filename, dataOrBlob){
+  if (window.claude && typeof window.claude.use === 'function'){
+    try {
+      const downloads = await window.claude.use('downloads');
+      if (downloads){
+        try{
+          await downloads.save({filename, data: dataOrBlob});
+          return true;
+        }catch(err){
+          const code = err && err.code;
+          if (code === 'declined'){
+          } else if (code === 'extension_not_enabled' || code === 'rejected_extension'){
+            alert('Este visor no permite descargar archivos ".' + filename.split('.').pop() + '" directamente. Abre el piloto como archivo HTML (descargado desde el chat) para generar el PDF/JSON sin esta restricción.');
+          } else {
+            alert('No se pudo guardar el archivo: ' + (err && err.message ? err.message : 'error desconocido'));
+          }
+          return false;
+        }
+      }
+    } catch(e) { /* sigue al metodo clasico */ }
+  }
+  const blob = (dataOrBlob instanceof Blob) ? dataOrBlob : new Blob([dataOrBlob], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// --- Guardar / cargar avance ---
+let dirty = false;
+function markDirty(){ dirty = true; const el=document.getElementById('saveStatus'); el.textContent='Cambios sin guardar'; el.className='save-status dirty'; }
+function persistSavedIndicator(msg){
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg || 'Guardado · ' + fmtFechaHora(new Date().toISOString());
+  el.className = 'save-status saved';
+  dirty = false;
+}
+window.addEventListener('beforeunload', (e) => { if (dirty){ e.preventDefault(); e.returnValue=''; } });
+
+function serializarGeneral(){
+  const ids = ['g_boleta','g_muestra','g_fecha','g_fechaInforme','g_empresa','g_rutEmpresa',
+    'g_obra','g_direccionObra','g_material','g_responsable','g_solicitadoPor',
+    'g_tmn','g_horasInmersion','g_inicioInmersion','g_finInmersion','g_observaciones'];
+  const out = {};
+  ids.forEach(id => { out[id.replace('g_','')] = document.getElementById(id).value; });
+  return out;
+}
+function restaurarGeneral(g){
+  if (!g) return;
+  Object.keys(g).forEach(k => {
+    const el = document.getElementById('g_'+k);
+    if (!el) return;
+    el.value = g[k];
+  });
+}
+
+document.getElementById('btnGuardar').addEventListener('click', async () => {
+  const data = {
+    tipo: 'densidad_gravas', version: 1,
+    general: serializarGeneral(), determinaciones, firmas,
+    guardadoAt: new Date().toISOString(),
+  };
+  const muestra = document.getElementById('g_muestra').value || 'sinmuestra';
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  const ok = await offerDownload(`Avance_DensidadGravas_${muestra}_${stamp}.json`, JSON.stringify(data,null,2));
+  if (ok) persistSavedIndicator();
+});
+
+document.getElementById('btnCargar').addEventListener('click', () => document.getElementById('fileInputAvance').click());
+document.getElementById('fileInputAvance').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      restaurarGeneral(data.general);
+      determinaciones = (data.determinaciones || []).map(x => Object.assign(nuevaDet(), x));
+      renderDet();
+      firmas = data.firmas || {};
+      initFirmas();
+      Object.keys(firmas).forEach(key => {
+        const f = firmas[key];
+        document.getElementById('firmaNombre_'+key).value = f.nombre;
+        document.getElementById('firmaRut_'+key).value = f.rut;
+        document.getElementById('firmaNombre_'+key).disabled = true;
+        document.getElementById('firmaRut_'+key).disabled = true;
+        const canvas = document.getElementById('firmaPad_'+key);
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+        img.src = f.imgDataUrl;
+        padCtx[key].hasDrawn = true;
+        const estadoEl = document.getElementById('firmaEstado_'+key);
+        estadoEl.textContent = 'Firmado — ' + fmtFechaHora(f.firmadoAt);
+        estadoEl.className = 'firma-estado firmado';
+        const btnFirmar = document.querySelector(`[data-firmar="${key}"]`);
+        if (btnFirmar) btnFirmar.disabled = true;
+        const btnLimpiar = document.querySelector(`[data-limpiar="${key}"]`);
+        if (btnLimpiar) btnLimpiar.disabled = true;
+      });
+      ROLES.forEach((r,idx) => {
+        if (!firmas[r.key] && idx>0){
+          const prevFirmado = !!firmas[ROLES[idx-1].key];
+          const btn = document.querySelector(`[data-firmar="${r.key}"]`);
+          if (btn) btn.disabled = !prevFirmado;
+        }
+      });
+      persistSavedIndicator('Avance cargado · ' + fmtFechaHora(new Date().toISOString()));
+      calcularTodo();
+    }catch(err){
+      alert('No se pudo leer el archivo de avance: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+// --- QR ---
+function dibujarQR(doc, text, x, y, size, moduleColor){
+  const qr = qrcode(0, 'M');
+  qr.addData(text); qr.make();
+  const count = qr.getModuleCount();
+  const pad = size*0.08;
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(x-pad, y-pad, size+pad*2, size+pad*2, 1.2, 1.2, 'F');
+  const cell = size/count;
+  doc.setFillColor(moduleColor[0], moduleColor[1], moduleColor[2]);
+  for (let r=0;r<count;r++){
+    for (let c=0;c<count;c++){
+      if (qr.isDark(r,c)){
+        doc.rect(x+c*cell, y+r*cell, cell+0.01, cell+0.01, 'F');
+      }
+    }
+  }
+}
+
+// Sanitiza caracteres Unicode que jsPDF/Helvetica no renderiza (mismo problema documentado en
+// pilotos anteriores: ³, ², Δ, ≤, ≥, ρ).
+function pdfAsciiSafe(str){
+  return String(str)
+    .replace(/³/g, '3')
+    .replace(/²/g, '2')
+    .replace(/Δ/g, 'diferencia ')
+    .replace(/≤/g, '<=')
+    .replace(/≥/g, '>=')
+    .replace(/ρ/g, 'rho');
+}
+
+// --- PDF "Alternativa C" ---
+function generarPDF(soloProvisorio){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const pageW = 216, pageH = 279, margin = 14;
+  const g = serializarGeneral();
+  const muestra = g.muestra || 'S-N';
+  const anio = new Date().getFullYear();
+  const codigo = `DG-${anio}-${muestra}`;
+
+  const nivelesFirmados = ROLES.filter(r => firmas[r.key]).length;
+  const validado = !soloProvisorio && nivelesFirmados === ROLES.length;
+  const estadoTxt = validado ? 'Informe validado' : 'Resultado provisorio';
+  const estadoColor = validado ? [0,184,92] : [255,179,0];
+
+  doc.setFillColor(13,21,38); doc.rect(0,0,pageW,26,'F');
+  doc.setFillColor(0,230,118); doc.roundedRect(margin, 7, 12, 12, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('QC', margin+6, 15, {align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(15);
+  doc.text('QCdigital', margin+18, 13);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('MODULO LABORATORIO', margin+18, 18.5);
+  doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Densidad de Gravas', pageW-margin, 15, {align:'right'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(154,165,192);
+  doc.text('Suelos — NCh 1117.Of77', pageW-margin, 20, {align:'right'});
+
+  let y = 30;
+  doc.setFillColor(estadoColor[0],estadoColor[1],estadoColor[2]);
+  doc.roundedRect(margin, y, pageW-margin*2, 14, 2, 2, 'F');
+  doc.setTextColor(13,21,38); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(estadoTxt, margin+6, y+9);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Codigo: ' + codigo, margin+70, y+9);
+  dibujarQR(doc, `QCDIGITAL-LAB|${codigo}|${estadoTxt}`, pageW-margin-16, y-1, 16, [13,21,38]);
+  y += 20;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2);
+  doc.setFontSize(8.5); doc.setTextColor(60,60,60);
+  const metaRow = (label, val, x) => {
+    doc.setFont('helvetica','bold');
+    const labelTxt = label+':';
+    doc.text(labelTxt, x, y);
+    const labelW = doc.getTextWidth(labelTxt);
+    doc.setFont('helvetica','normal');
+    doc.text(String(val||'-'), x+labelW+2, y);
+  };
+  metaRow('Boleta N°', g.boleta, margin);
+  metaRow('Muestra N°', g.muestra, margin+68);
+  metaRow('Material', g.material, margin+138);
+  y += 6;
+  metaRow('Fecha ensayo', g.fecha, margin);
+  metaRow('Fecha informe', g.fechaInforme, margin+68);
+  metaRow('Empresa', g.empresa, margin+138);
+  y += 8;
+
+  const cards = [
+    ['Densidad Neta', pdfAsciiSafe(document.getElementById('rc_dNeta').textContent)],
+    ['Densidad Real (SSS)', pdfAsciiSafe(document.getElementById('rc_dRealSSS').textContent)],
+    ['Densidad Real (seca)', pdfAsciiSafe(document.getElementById('rc_dRealSeca').textContent)],
+    ['Absorcion de agua', pdfAsciiSafe(document.getElementById('rc_absorcion').textContent)],
+  ];
+  const cw = (pageW-margin*2-3*4)/4;
+  cards.forEach((c,i) => {
+    const cx = margin + i*(cw+4);
+    doc.setFillColor(17,26,48); doc.roundedRect(cx, y, cw, 20, 2, 2, 'F');
+    doc.setTextColor(154,165,192); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(c[0], cx+4, y+7);
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold');
+    const raw = String(c[1]);
+    let fontSize = 11;
+    doc.setFontSize(fontSize);
+    let valLines = doc.splitTextToSize(raw, cw-8);
+    if (valLines.length > 1){
+      fontSize = 8.5;
+      doc.setFontSize(fontSize);
+      valLines = doc.splitTextToSize(raw, cw-8);
+    }
+    valLines = valLines.slice(0,2);
+    const lineH = fontSize*0.42;
+    const startY = valLines.length>1 ? y+11.5 : y+15;
+    valLines.forEach((ln,li) => { doc.text(ln, cx+4, startY+li*lineH); });
+  });
+  y += 26;
+
+  // Chart image (izquierda) + tabla resumen (derecha)
+  const chartCanvas = document.getElementById('chartDensidades');
+  let chartImg = null;
+  try { chartImg = chartCanvas.toDataURL('image/png'); } catch(e){}
+  const chartH = 62, chartW = 88;
+  if (chartImg){
+    doc.setFillColor(12,20,36); doc.rect(margin, y, chartW, chartH, 'F');
+    doc.addImage(chartImg, 'PNG', margin+2, y+2, chartW-4, chartH-4);
+    doc.setDrawColor(90,102,144); doc.setLineWidth(0.3); doc.rect(margin, y, chartW, chartH);
+  }
+
+  const tableX = margin + chartW + 6;
+  const tableW = pageW - margin - tableX;
+  doc.setFontSize(7.5); doc.setTextColor(20,20,20); doc.setFont('helvetica','bold');
+  doc.text('Determinacion', tableX, y+4);
+  doc.text('r neta (kg/m3)', tableX+34, y+4);
+  doc.text('Absorc. (%)', tableX+62, y+4);
+  doc.setDrawColor(150,150,150); doc.line(tableX, y+6, tableX+tableW, y+6);
+  let ty = y+11;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(40,40,40);
+  determinaciones.forEach((d,i) => {
+    const c = parseFloat(d.c), b = parseFloat(d.b), a = parseFloat(d.a);
+    let dNeta = NaN, abs = NaN;
+    if (!isNaN(c) && !isNaN(b) && !isNaN(a) && (c-a)!==0 && c>0){
+      dNeta = (c/(c-a))*1000;
+      abs = ((b-c)/c)*100;
+    }
+    if (ty > y + chartH - 2) return;
+    doc.text('Det. '+(i+1), tableX, ty);
+    doc.text(isNaN(dNeta)?'-':dNeta.toFixed(0), tableX+34, ty);
+    doc.text(isNaN(abs)?'-':abs.toFixed(2), tableX+62, ty);
+    ty += 5.2;
+  });
+  y += chartH + 8;
+
+  doc.setDrawColor(42,54,84); doc.setLineWidth(0.2); doc.line(margin, y, pageW-margin, y); y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Informacion general', margin, y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  const obraLines = doc.splitTextToSize('Obra / Proyecto: ' + (g.obra||'-'), pageW-margin*2);
+  doc.text(obraLines, margin, y); y += obraLines.length*4.5;
+  doc.text('Ubicacion / procedencia: ' + (g.direccionObra||'-'), margin, y); y+=5;
+  doc.text(`TMN: ${g.tmn||'-'} mm   Horas de inmersion: ${g.horasInmersion||'-'} h`, margin, y); y+=5;
+  doc.text(`Ensayo realizado por: ${g.responsable||'-'}   Solicitado por: ${g.solicitadoPor||'-'}`, margin, y); y+=5;
+  if (g.observaciones){
+    const obsLines = doc.splitTextToSize('Observaciones: ' + g.observaciones, pageW-margin*2);
+    doc.text(obsLines, margin, y); y += obsLines.length*4.5;
+  }
+  y += 4;
+
+  doc.setDrawColor(42,54,84); doc.line(margin, y, pageW-margin, y); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text('Firmas', margin, y); y+=5;
+  const fw = (pageW-margin*2-2*6)/3;
+  ROLES.forEach((r,i) => {
+    const fx = margin + i*(fw+6);
+    doc.setDrawColor(180,180,180); doc.rect(fx, y, fw, 28);
+    const f = firmas[r.key];
+    if (f && f.imgDataUrl){
+      try{ doc.addImage(f.imgDataUrl, 'PNG', fx+3, y+2, fw-6, 14); }catch(e){}
+      doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0);
+      doc.text(f.nombre, fx+3, y+20);
+      doc.setFont('helvetica','normal'); doc.text('RUT ' + f.rut, fx+3, y+24);
+      doc.setFontSize(6.5); doc.setTextColor(100,100,100);
+      doc.text(`N° ${codigo}-${r.key.toUpperCase()}`, fx+3, y+27.5);
+    } else {
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Pendiente de firma', fx+fw/2, y+14, {align:'center'});
+    }
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(120,120,120);
+    doc.text(r.label, fx+3, y+ (f? 0 : -2) );
+  });
+  y += 34;
+
+  doc.setFontSize(7); doc.setTextColor(154,165,192);
+  doc.text('QCdigital Laboratorio · Documento generado automaticamente · ' + fmtFechaHora(new Date().toISOString()), margin, pageH-10);
+  doc.text('Codigo de verificacion: ' + codigo, pageW-margin, pageH-10, {align:'right'});
+
+  const fname = `Informe_${codigo}_${validado?'validado':'provisorio'}.pdf`;
+  offerDownload(fname, doc.output('blob'));
+}
+
+document.getElementById('btnPdfProvisorio').addEventListener('click', () => generarPDF(true));
+document.getElementById('btnPdfValidado').addEventListener('click', () => generarPDF(false));
+
+// init
+initFirmas();
+determinaciones.push(nuevaDet());
+renderDet();
+calcularTodo();
+</script>
+</body>
+</html>
