@@ -57,7 +57,7 @@ Promise.all([fetch('data/documentos.json').then(r=>r.json()),fetch('data/docs_ht
   const dl=document.getElementById('dl');
   const fname=(d.codigo+' '+d.titulo).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').slice(0,90)+'.docx';
   dl.onclick=async ev=>{ev.preventDefault();const t=dl.textContent;dl.textContent='Preparando…';
-    try{const w=await fetch('docs/words.json').then(r=>r.json());const bin=atob(w[c]);const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+    try{const w=await fetch('words.json').then(r=>r.json());const bin=atob(w[c]);const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
       const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));a.download=fname;document.body.appendChild(a);a.click();a.remove();dl.textContent=t}
     catch(e){dl.textContent='No se pudo descargar'}};
   document.getElementById('doc').innerHTML=html[c];
